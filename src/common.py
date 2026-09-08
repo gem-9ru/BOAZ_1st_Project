@@ -23,6 +23,9 @@ class Site:
         self.s = requests.Session()
         self.s.headers.update({"User-Agent": UA, "Accept-Language": "ko-KR,ko;q=0.9"})
         self.rows, self.notes = [], []
+        # 기본 12칸 외에 사이트가 더 주는 값(학력·급여 등)을 남기고 싶을 때 지정한다.
+        # 지정하지 않으면 save() 가 extrasaction="ignore" 로 조용히 버린다.
+        self.extra_cols = []
         self.rp = rp.RobotFileParser()
         self.delay = delay if delay is not None else DEFAULT_DELAY
         try:
@@ -66,6 +69,7 @@ class Site:
         #   반드시 보존한다.
         cols = ["사이트", "회사명", "공고제목", "직무", "경력", "고용형태", "지역",
                 "기술스택", "마감일", "공고URL", "외부원본ID", "수집시각"]
+        cols += [c for c in self.extra_cols if c not in cols]
         out = DATA / f"{self.name}.csv"
         with out.open("w", newline="", encoding="utf-8-sig") as f:
             w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")

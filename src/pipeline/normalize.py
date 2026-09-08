@@ -327,24 +327,63 @@ def duty_candidates(title, company=""):
     return _clean_tokens(found, company)
 
 
-def enrich_duty(duty, title, site="", company=""):
-    """직무 칸을 최대한 상세하게 만든다. (직무, 보강여부)"""
+def enrich_duty(duty, title, site="", company="", detail=None):
+    """직무 칸을 최대한 상세하게 만든다. (직무, 보강여부)
+
+    [출처 우선순위]
+      1. 직종      사이트가 붙인 표준 직업분류명 ("제도사", "강구조물 가공원 및 건립원")
+      2. 직무키워드 사이트가 붙인 직무 코드 (커리어 "기구설계, 자동차부품개발, CATIA")
+         → 1·2 는 사이트가 분류한 값이라 그대로 신뢰한다.
+      3. 모집분야   자리 이름 ("5톤화물차,화물차운전,화물운송,운전직")
+      4. 원본 직무 칸
+      5. 공고제목
+      6. 담당업무 첫 문장
+         → 3~6 은 자유 서술이라 직무 어휘 사전으로 걸러서 쓴다.
+
+    제목에서만 뽑던 이전 방식은 제목에 직무가 없으면("2026년 신입사원 공개채용")
+    아무것도 못 건졌다. 상세 필드를 붙이면서 그 구멍이 메워진다.
+    """
+    detail = detail or {}
     duty = (duty or "").strip()
     if duty and BOILERPLATE.search(duty):
         duty = ""
     if len(duty) > 160:                       # 설명문으로 판단
         duty = ""
-    # 메뉴명/구인처 유형만 들어 있으면 직무로 인정하지 않는다 (부산 '기업채용' 등)
+
+    # 1·2 — 사이트가 분류한 값. 어휘 사전을 거치지 않고 그대로 앞에 둔다.
+    trusted = []
+    for key in ("직종", "직무키워드"):
+        v = (detail.get(key) or "").strip()
+        if v and not BOILERPLATE.search(v) and len(v) <= 200:
+            trusted += _clean_tokens(SPLIT_RE.split(v), company)
+
+    # 3 — 모집분야. 자리 이름이라 통째로도 쓸 만하지만 안내문이 섞이므로 사전으로 거른다.
+    field = (detail.get("직무상세") or "").strip()
+    from_field = []
+    if field and not BOILERPLATE.search(field):
+        if len(field) <= 60 and not re.search(r"[.。]\s", field):
+            from_field = _clean_tokens(SPLIT_RE.split(field), company)
+        from_field += duty_candidates(field[:200], company)
+
+    # 4 — 원본 직무 칸
     base = _clean_tokens(SPLIT_RE.split(duty), company) if duty else []
-    cands = duty_candidates(title, company)
-    merged = list(dict.fromkeys(base + [c for c in cands if c not in base]))
+
+    # 5 — 공고제목
+    from_title = duty_candidates(title, company)
+
+    # 6 — 담당업무 첫 문장. 서술문이라 사전 매칭만 취한다.
+    task = (detail.get("담당업무") or "").strip()
+    from_task = duty_candidates(task[:150], company) if task else []
+
+    merged = list(dict.fromkeys(
+        [x for x in trusted + from_field + base + from_title + from_task if x]))
     if not merged:
         # 원본이 메뉴명/구인처 유형뿐이었다면 그 값을 직무로 남기지 않는다
         # (부산 '기업채용', 워크투게더 '일반구인' 등). 빈칸이 잘못된 값보다 낫다.
         if duty and not base:
             return "", True
         return duty, False
-    out = ", ".join(merged)[:200]
+    out = ", ".join(merged)[:300]
     return out, out != duty
 
 
@@ -436,23 +475,76 @@ def orig_id(url):
     return ""
 
 OUT_COLS = ["통합키", "사이트", "원본공고ID", "회사명", "회사키", "공고제목",
-            "직무", "경력구분", "최소연차", "고용형태", "고용형태표준", "알바여부",
-            "시도", "시군구", "지역원문", "기술스택", "마감일", "마감구분",
+            "직무", "직무상세", "직무키워드", "담당업무", "자격요건", "우대사항",
+            "직종", "업종", "직급직책", "근무시간", "급여", "채용인원", "채용인원구분", "모집인원원문", "학력",
+            "경력구분", "최소연차", "고용형태", "고용형태표준", "알바여부",
+            "시도", "시군구", "지역원문", "상세주소", "기술스택", "마감일", "마감구분",
             "공고URL", "외부원본ID", "수집시각"]
 
+# ---------------------------------------------------------------------------
+# 채용인원
+# ---------------------------------------------------------------------------
+# 표기가 사이트마다 다르다.
+#   잡코리아 "1 명" / "○ 명"(미정)      부산일자리정보망 "1" / "0"
+#   사람인   "(3명)" — 정형 템플릿만     커리어 "0명"
+# 0 과 ○ 는 '뽑긴 뽑는데 몇 명인지 안 밝힘' 이라 0명이 아니다. 미정으로 따로 센다.
+# 수요 규모를 셀 때 미정을 0 으로 잡으면 과소, 1 로 잡으면 과대가 되므로
+# 원문·숫자·구분을 모두 남겨서 분석 단계에서 고르게 한다.
+_NUM = re.compile(r"(\d{1,4})")
+_UNDET = re.compile(r"[○оO0]\s*명|미정|수시|각\s?\d?\s*명|00+")
+
+
+def norm_headcount(s):
+    """(채용인원, 구분) — 구분: 명시 / 미정 / 없음"""
+    s = (s or "").strip()
+    if not s:
+        return "", "없음"
+    m = _NUM.search(s)
+    if m:
+        n = int(m.group(1))
+        if 0 < n <= 9999:
+            return str(n), "명시"
+    if _UNDET.search(s) or m:      # "○ 명", "0명"
+        return "", "미정"
+    return "", "미정"
+
+
+SITE_ALIAS = {
+    "잡코리아추가": "잡코리아", "잡코리아부산": "잡코리아",
+    "사람인부산": "사람인", "커리어부산": "커리어",
+    "널스케이프부산": "널스케이프",
+}
+
 SNAPSHOT = "2026-09-07"     # 데이터셋 기준일
+
+# 상세 보강 데이터(직무내용·모집분야·직종 등)를 공고URL 로 붙인다.
+import detail_join
 
 
 def main():
     BUILD.mkdir(exist_ok=True)
+    detail = detail_join.load()
+    if detail:
+        print(f"상세 보강 데이터 {len(detail):,}건 로드")
+        for c, pct in detail_join.stats(detail).items():
+            if pct:
+                print(f"   {c:<10}{pct:>4}%")
+        print()
     rows, stat, stat_enrich = [], {}, {}
     for p in sorted(glob.glob(str(DATA / "*.csv"))):
         site = Path(p).stem
+        # *_상세 / *_직무상세 는 공고 목록이 아니라 공고URL 로 붙이는 조인 테이블이다.
+        # 여기서 걸러내지 않으면 공고 건수가 두 배로 부풀고 회사명 없는 행이 쏟아진다.
+        if site.endswith("_상세") or site.endswith("_직무상세"):
+            continue
         n = alba = expired = 0
         for r in csv.DictReader(open(p, encoding="utf-8-sig")):
             n += 1
             title = r.get("공고제목", "")
-            std, is_alba = norm_etype(r.get("고용형태"), title, r.get("직무"))
+            _d0 = detail.get(r.get("공고URL", ""), {})
+            # 목록에 고용형태가 없는 사이트(부산일자리정보망)는 상세에서 채운다.
+            std, is_alba = norm_etype(r.get("고용형태") or _d0.get("_고용형태"),
+                                      title, r.get("직무"))
             if is_alba:
                 alba += 1
                 continue                       # 알바 공고는 데이터셋에서 제외
@@ -463,26 +555,46 @@ def main():
             if dl_iso and dl_iso < SNAPSHOT:
                 expired += 1
                 continue
-            duty, enriched = enrich_duty(r.get("직무"), title, site, r.get("회사명", ""))
+            d = detail.get(r.get("공고URL", ""), {})
+            duty, enriched = enrich_duty(r.get("직무"), title, site, r.get("회사명", ""),
+                                         detail=d)
             if enriched:
                 stat_enrich[site] = stat_enrich.get(site, 0) + 1
-            sido, sgg = norm_region(r.get("지역"))
+            # 지역도 상세가 더 정확하다(목록은 시군구가 비는 경우가 많다).
+            region_src = r.get("지역") or d.get("_근무지역") or d.get("상세주소") or ""
+            sido, sgg = norm_region(region_src)
             dl, dlk = dl_iso, dl_kind
             ck, yrs = norm_career(r.get("경력"))
+            hc, hck = norm_headcount(d.get("모집인원"))
             co = r.get("회사명", "")
             # [수정] '잡코리아추가' 는 사이트맵 밖 공고를 따로 받은 것일 뿐 같은 잡코리아다.
             #   별도 사이트명으로 두면 중복제거가 '사이트 간 중복' 으로 잘못 집계하고
             #   (교집합 21,285건), 통합 결과의 '게재사이트수' 도 부풀려진다.
             site_name = r.get("사이트") or site
-            if site_name == "잡코리아추가":
-                site_name = "잡코리아"
+            # 같은 사이트를 여러 경로로 받았을 뿐이므로 하나로 합친다.
+            #   ~추가   사이트맵 밖 공고를 인링크로 따로 확보한 것
+            #   ~부산   전국 수집이 다지역 공고를 놓쳐서 지역 필터로 다시 받은 것
+            # 다른 사이트로 두면 중복제거가 '사이트 간 중복' 으로 잘못 집계하고
+            # 통합 결과의 '게재사이트수' 도 부풀려진다.
+            site_name = SITE_ALIAS.get(site_name, site_name)
             rows.append({
                 "통합키": "", "사이트": site_name,
                 "원본공고ID": orig_id(r.get("공고URL")),
                 "회사명": co, "회사키": norm_company(co), "공고제목": title,
-                "직무": duty, "경력구분": ck, "최소연차": yrs,
-                "고용형태": r.get("고용형태", ""), "고용형태표준": std, "알바여부": "",
-                "시도": sido, "시군구": sgg, "지역원문": r.get("지역", ""),
+                "직무": duty,
+                "직무상세": d.get("직무상세", ""), "직무키워드": d.get("직무키워드", ""),
+                "담당업무": d.get("담당업무", ""), "자격요건": d.get("자격요건", ""),
+                "우대사항": d.get("우대사항", ""), "직종": d.get("직종", ""),
+                "업종": d.get("업종", ""), "직급직책": d.get("직급직책", ""),
+                "근무시간": d.get("근무시간", ""), "급여": d.get("급여", ""),
+                "채용인원": hc, "채용인원구분": hck,
+                "모집인원원문": d.get("모집인원", ""),
+                "학력": d.get("학력") or r.get("학력", ""),
+                "경력구분": ck, "최소연차": yrs,
+                "고용형태": r.get("고용형태") or d.get("_고용형태", ""),
+                "고용형태표준": std, "알바여부": "",
+                "시도": sido, "시군구": sgg, "지역원문": region_src,
+                "상세주소": d.get("상세주소", ""),
                 "기술스택": r.get("기술스택", ""), "마감일": dl, "마감구분": dlk,
                 "공고URL": r.get("공고URL", ""), "외부원본ID": r.get("외부원본ID", ""),
                 "수집시각": r.get("수집시각", ""),
