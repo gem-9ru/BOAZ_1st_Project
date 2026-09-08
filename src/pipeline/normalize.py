@@ -509,6 +509,9 @@ def norm_headcount(s):
     return "", "미정"
 
 
+# 게시 고지 때문에 통합 데이터셋에서 제외하는 사이트 (파일은 로컬에 남긴다)
+EXCLUDE_SITES = {"잡부산시대"}
+
 SITE_ALIAS = {
     "잡코리아추가": "잡코리아", "잡코리아부산": "잡코리아",
     "사람인부산": "사람인", "커리어부산": "커리어",
@@ -524,27 +527,40 @@ import detail_join
 def main():
     BUILD.mkdir(exist_ok=True)
     detail = detail_join.load()
+    # 원출처 열쇠로 붙이는 교차 연결표(사람인 상세가 차단으로 막힌 몫을 메운다)
+    by_origin = detail.pop("__by_origin__", {})
     if detail:
         print(f"상세 보강 데이터 {len(detail):,}건 로드")
         for c, pct in detail_join.stats(detail).items():
             if pct:
                 print(f"   {c:<10}{pct:>4}%")
         print()
-    rows, stat, stat_enrich = [], {}, {}
+    rows, stat, stat_enrich, excluded = [], {}, {}, {}
     for p in sorted(glob.glob(str(DATA / "*.csv"))):
         site = Path(p).stem
         # *_상세 / *_직무상세 는 공고 목록이 아니라 공고URL 로 붙이는 조인 테이블이다.
         # 여기서 걸러내지 않으면 공고 건수가 두 배로 부풀고 회사명 없는 행이 쏟아진다.
         if site.endswith("_상세") or site.endswith("_직무상세"):
             continue
+        # 잡부산시대는 "동의없이 재배포할 수 없으며 … 구인구직 활용외 다른 용도로
+        # 사용할 수 없습니다" 고지가 상세페이지에 있다. 로컬 파일은 남기되
+        # 통합 데이터셋에는 넣지 않는다(잡플래닛과 같은 처리).
+        if site in EXCLUDE_SITES:
+            excluded[site] = sum(1 for _ in csv.DictReader(open(p, encoding="utf-8-sig")))
+            continue
         n = alba = expired = 0
         for r in csv.DictReader(open(p, encoding="utf-8-sig")):
             n += 1
             title = r.get("공고제목", "")
-            _d0 = detail.get(r.get("공고URL", ""), {})
+            _u0 = r.get("공고URL", "")
+            _d0 = detail.get(_u0) or by_origin.get(detail_join._own_key(_u0)) or {}
             # 목록에 고용형태가 없는 사이트(부산일자리정보망)는 상세에서 채운다.
             std, is_alba = norm_etype(r.get("고용형태") or _d0.get("_고용형태"),
                                       title, r.get("직무"))
+            # 재노출 사이트가 밝힌 원출처가 알바 전문 사이트면 고용형태 표기와 무관하게 알바다.
+            # 잡코리아 부산 목록에는 알바몬 링크가 469건 섞여 온다.
+            if (r.get("외부원본ID") or "").startswith(("albamon:", "alba:")):
+                is_alba = True
             if is_alba:
                 alba += 1
                 continue                       # 알바 공고는 데이터셋에서 제외
@@ -555,7 +571,8 @@ def main():
             if dl_iso and dl_iso < SNAPSHOT:
                 expired += 1
                 continue
-            d = detail.get(r.get("공고URL", ""), {})
+            _u = r.get("공고URL", "")
+            d = detail.get(_u) or by_origin.get(detail_join._own_key(_u)) or {}
             duty, enriched = enrich_duty(r.get("직무"), title, site, r.get("회사명", ""),
                                          detail=d)
             if enriched:
@@ -615,6 +632,10 @@ def main():
     tn = sum(v[0] for v in stat.values()); ta = sum(v[1] for v in stat.values())
     te = sum(v[2] for v in stat.values())
     print(f"{'합계':<14}{tn:>8,}{ta:>7,}{te:>8,}{tn-ta-te:>9,}")
+    if excluded:
+        print("\n게시 고지로 제외한 사이트 (파일은 data/ 에 남아 있음)")
+        for s_, n_ in excluded.items():
+            print(f"   {s_:<14}{n_:>8,}건")
     if stat_enrich:
         print("\n직무 보강(제목에서 추출해 추가)")
         for s, n in sorted(stat_enrich.items(), key=lambda x: -x[1]):

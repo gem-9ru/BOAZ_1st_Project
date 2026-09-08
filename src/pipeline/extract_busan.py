@@ -40,17 +40,53 @@ BUSAN_WORD = re.compile(
     r"동래구|금정구|연제구|수영구|영도구|사하구|부산진구|기장군|사상구")
 
 def is_busan(r):
-    if r.get("시도") == "부산":
-        return True, "시도=부산"
-    if "부산" in (r.get("지역원문") or ""):
-        return True, "지역원문에 부산 포함"
-    if (r.get("시군구") or "") in BUSAN_SGG and not r.get("시도"):
-        return True, "부산 소속 시군구"
-    if BUSAN_WORD.search((r.get("공고제목") or "") + " " + (r.get("상세주소") or "")):
-        return True, "제목·주소에 부산 지명"
+    """(부산여부, 판정근거, 확실도) — 확실도: 강 / 중 / 약
+
+    [왜 등급을 나누는가]
+    다지역 공고("서울, 경기, 대구, 경북, 부산, 경남")를 넣는 건 맞지만,
+    "정말 부산에서 뽑는가" 는 따로 확인해야 한다. 지역 태그가 넓게 붙었을 뿐
+    실제 근무지는 서울인 공고를 넣으면 부산 수요가 부풀려진다.
+
+    → **상세페이지의 근무지주소를 정본으로 본다.**
+       주소가 부산이면 확실하고, 주소가 있는데 부산이 아니면서 지역칸에도 부산이 없으면
+       제목에 '부산' 이 있어도 부산 근무로 보지 않는다(보류로 뺀다).
+
+    [실측 근거]
+      · 잡코리아 부산 지역필터로 받은 3,319건 중 상세 근무지주소가 부산인 것 3,318건(99.97%)
+        → 사이트 지역 필터는 믿을 만하다
+      · 부산일자리정보망 상세 다지역 1,431건 중 1,357건이 부산 포함.
+        나머지 74건도 "강서구,수영구" 처럼 부산 시군구만 적힌 것이라 실제로는 전부 부산
+    """
+    addr = r.get("상세주소") or ""
+    region = r.get("지역원문") or ""
+    sido = r.get("시도") or ""
+    sgg = r.get("시군구") or ""
+    title = r.get("공고제목") or ""
+    multi = "," in region
+
+    # ① 상세 근무지주소에 부산 — 가장 확실하다
+    if "부산" in addr or any(g in addr for g in BUSAN_SGG if len(g) > 2):
+        return True, "근무지주소=부산", "강"
+
+    # ② 사이트가 부산으로 분류
+    if sido == "부산":
+        return True, "다지역(부산 포함)" if multi else "시도=부산", "강" if not multi else "중"
+    if "부산" in region:
+        return True, "다지역(부산 포함)" if multi else "지역원문=부산", "강" if not multi else "중"
+    if sgg in BUSAN_SGG and not sido:
+        return True, "부산 소속 시군구", "강"
+
+    # ③ 부산광역시가 운영하는 지역 포털 — 지역 표기가 없어도 부산 공고다
     if r.get("사이트") == "부산일자리정보망":
-        return True, "부산포털(지역미상)"
-    return False, ""
+        return True, "부산포털(지역미상)", "중"
+
+    # ④ 제목에만 부산. 근무지주소가 이미 있는데 부산이 아니면 그 주소가 정본이다.
+    if BUSAN_WORD.search(title):
+        if addr:
+            return False, "제목엔 부산이나 근무지주소가 타지역", "보류"
+        return True, "제목에 부산 지명", "약"
+
+    return False, "", ""
 
 def dump(path, cols, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -65,21 +101,33 @@ def main():
     cols = list(rows[0].keys()) if rows else []
     busan, hold = [], []
     why = Counter()
+    conf = Counter()
     for r in rows:
-        ok, reason = is_busan(r)
+        ok, reason, level = is_busan(r)
         if ok:
+            r = dict(r); r["부산판정근거"] = reason; r["부산판정확실도"] = level
+            busan.append(r); why[reason] += 1; conf[level] += 1
+        elif level == "보류":
+            # 제목엔 부산이 있으나 상세 근무지주소가 타지역인 공고.
+            # 버리지 않고 따로 남겨 검토할 수 있게 한다.
             r = dict(r); r["부산판정근거"] = reason
-            busan.append(r); why[reason] += 1
+            hold.append(r)
 
     print(f"입력 {len(rows):,}행 → 부산 {len(busan):,}행\n")
     print("판정 근거별")
     for k, v in why.most_common():
-        print(f"   {k:22s}{v:8,}")
+        print(f"   {k:26s}{v:8,}")
+    print("\n확실도")
+    for k in ("강", "중", "약"):
+        if conf[k]:
+            print(f"   {k:26s}{conf[k]:8,}")
+    if hold:
+        print(f"\n보류(제목엔 부산·근무지주소는 타지역) {len(hold):,}건 -> 부산_판정보류.csv")
 
     OUT.mkdir(exist_ok=True)
-    dump(OUT / "부산_공고_원본.csv", cols + ["부산판정근거"], busan)
+    dump(OUT / "부산_공고_원본.csv", cols + ["부산판정근거", "부산판정확실도"], busan)
     if hold:
-        dump(OUT / "부산_판정보류.csv", cols, hold)
+        dump(OUT / "부산_판정보류.csv", cols + ["부산판정근거"], hold)
 
     # 사이트별 요약
     by = Counter(r["사이트"] for r in busan)

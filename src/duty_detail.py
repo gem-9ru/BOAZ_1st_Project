@@ -130,6 +130,29 @@ def p_saramin(url, resp):
     return sanitize(r) if _has(r) else None
 
 
+# 잡코리아 상세요강(담당업무 본문)은 메인 페이지가 아니라 별도 iframe 에 있다.
+#   /Recruit/GI_Read_Comt_Ifrm?Gno={gno}
+# 메인 페이지 HTML 에는 '상세요강' 이라는 제목만 있고 내용이 비어 있어서
+# 담당업무 채움률이 0% 였다. 이게 이 데이터셋에서 가장 중요한 필드라 한 번 더 받는다.
+IFRM = "https://www.jobkorea.co.kr/Recruit/GI_Read_Comt_Ifrm?Gno={}&isHiringCenter=false&hideMapView=false"
+_SESSION = {"s": None}
+
+
+def _jk_body(url, gno):
+    """상세요강 iframe 본문 텍스트. 이미지로만 된 공고는 빈 문자열."""
+    try:
+        s = _SESSION["s"]
+        r = s.get(IFRM.format(gno), timeout=(10, 25), headers={"Referer": url})
+        if r.status_code != 200:
+            return ""
+        soup = BeautifulSoup(r.text, "html.parser")
+        for t_ in soup(["script", "style"]):
+            t_.decompose()
+        return re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+    except Exception:
+        return ""
+
+
 def p_jobkorea(url, resp):
     s = BeautifulSoup(resp.text, "html.parser")
     r = blank(url)
@@ -157,6 +180,89 @@ def p_jobkorea(url, resp):
     if m and not r["업종"]:
         r["업종"] = CLEAN(m.group(1))
     sections(txt, r)
+
+    # 상세요강 iframe — 담당업무가 여기에만 있다
+    gm = re.search(r"GI_Read/(\d+)", url)
+    if gm:
+        body = _jk_body(url, gm.group(1))
+        if body:
+            sections(body, r)
+            if not r["담당업무"]:
+                # "이런 업무를 해요", "[모집직무] …" 같은 잡코리아 고유 표현도 받는다
+                bm = re.search(r"(?:이런\s?업무를\s?해요|담당\s?업무|\[모집직무\]|\[직무소개\])"
+                               r"\s*[:：]?\s*(.{10,700}?)"
+                               r"(?=\s*(?:이런\s?분|자격요건|우대|복지|근무조건|접수|전형)|$)", body)
+                if bm:
+                    r["담당업무"] = CLEAN(bm.group(1))[:700]
+    return sanitize(r) if _has(r) else None
+
+
+def p_jobkorea_ext(url, resp):
+    """잡코리아 **워크넷 연계** 공고 — /Recruit/GI_Read/{id}/Ext?siteCode=WN
+
+    잡코리아 부산 목록 8,661건 중 4,213건이 이 유형이다(고용24 연계).
+    자체 공고와 **레이아웃이 완전히 다르다.** React 의 RecruitmentItem 블록이 없고
+    '요약정보 / 지원자격 / 근무조건 / 기업정보 / 근무환경' 섹션에 라벨-값이 줄 단위로 온다.
+
+        지원자격   경력 경력무관 / 학력 학력무관
+        근무조건   고용형태 계약직 / 0 명 / 급여 월급 175~175 만원 / 지역 부산 > 해운대구
+        기업정보   산업(업종) 서치펌·헤드헌팅 / 기업형태 중소기업(300명이하)
+        근무환경   부산광역시 해운대구 센텀남대로 35 8층 CGV 센텀시티
+
+    자체 공고용 파서(p_jobkorea)를 그대로 쓰면 전부 빈 결과가 나온다.
+    """
+    s = BeautifulSoup(resp.text, "html.parser")
+    for t_ in s(["script", "style"]):
+        t_.decompose()
+    r = blank(url)
+    txt = re.sub(r"\n{2,}", "\n", s.get_text("\n", strip=True))
+    lines = [l.strip() for l in txt.split("\n") if l.strip()]
+
+    # 라벨 다음 줄이 값이다
+    KEY = {"고용형태": "근무형태", "학력": "학력", "산업(업종)": "업종",
+           "급여": "급여", "근무시간": "근무시간", "직종": "직종"}
+    for i, l in enumerate(lines[:-1]):
+        col = KEY.get(l)
+        if col and not r[col]:
+            v = CLEAN(lines[i + 1])
+            # 급여는 "월급" 다음에 금액이 또 한 줄로 온다
+            if col == "급여" and v in ("월급", "연봉", "시급", "일급") and i + 2 < len(lines):
+                v = f"{v} {CLEAN(lines[i + 2])}"
+            r[col] = v[:200]
+
+    m = re.search(r"모집인원\s*\n\s*([\d○]+)\s*명", txt)
+    if m:
+        r["모집인원"] = m.group(1)
+
+    # 근무환경 섹션 구조: "근무환경 / 근무환경 정보 / <주소> / 지도보기"
+    # 머리글 줄("근무환경", "근무환경 정보")을 건너뛰고 첫 실질 줄을 쓴다.
+    for i, l in enumerate(lines):
+        if l.startswith("근무환경"):
+            for nxt in lines[i + 1:i + 4]:
+                if nxt.startswith("근무환경") or nxt in ("지도보기", "정보"):
+                    continue
+                r["상세주소"] = CLEAN(nxt)[:200]
+                break
+            break
+    if not r["상세주소"]:
+        m = re.search(r"지역\s*\n([가-힣]+\s*>\s*[가-힣]+)", txt)
+        if m:
+            r["상세주소"] = CLEAN(m.group(1))
+
+    # 이 레이아웃엔 모집분야 칸이 없다. '요약정보' 아래 회사명 다음 줄이 공고 제목이고
+    # 그게 곧 모집 자리다. og:title 은 "회사명 채용, 공채 공고 잡코리아" 라 못 쓴다.
+    for i, l in enumerate(lines):
+        if l == "요약정보":
+            for nxt in lines[i + 1:i + 5]:
+                if nxt in ("지원자격", "근무조건") or len(nxt) < 4:
+                    continue
+                if i + 2 < len(lines) and nxt == lines[i + 1]:
+                    continue          # 첫 줄은 회사명 반복
+                r["모집분야"] = CLEAN(nxt)[:200]
+                break
+            break
+
+    sections(re.sub(r"\s+", " ", txt), r)
     return sanitize(r) if _has(r) else None
 
 
@@ -265,7 +371,12 @@ def p_career(url, resp):
     return sanitize(r) if _has(r) else None
 
 
-PARSER = {"사람인": p_saramin_detail, "잡코리아": p_jobkorea, "원티드": p_wanted,
+def p_jobkorea_any(url, resp):
+    """잡코리아는 URL 형태로 레이아웃이 갈린다."""
+    return p_jobkorea_ext(url, resp) if "/Ext" in url else p_jobkorea(url, resp)
+
+
+PARSER = {"사람인": p_saramin_detail, "잡코리아": p_jobkorea_any, "원티드": p_wanted,
           "커리어": p_career}
 
 
@@ -287,6 +398,9 @@ def urls_for(site):
                 if r["사이트"] == site)
     for r in rows:
         u = (r.get("공고URL") or "").strip()
+        # 알바몬 링크는 아르바이트 공고라 데이터셋 대상이 아니다(정규화에서도 제외된다)
+        if "albamon.com" in u:
+            continue
         if site == "사람인":
             # 상세요강만 주는 가벼운 경로로 바꿔 요청한다(431KB -> 9KB)
             m = re.search(r"rec_idx=(\d+)", u)
@@ -301,6 +415,7 @@ def urls_for(site):
 
 def run(site, urls, parse, root, workers=4, per_sec=3.0):
     s = Site(f"{site}_직무상세", root, delay=0)
+    _SESSION["s"] = s.s          # 파서가 추가 요청(iframe)에 같은 세션을 쓰도록
     s.note(f"직무 상세 보강 대상 {len(urls):,}건")
     fetch_many_ckpt(s, urls, parse, workers=workers, per_sec=per_sec, label=site)
     out = DATA / f"{site}_직무상세.csv"
@@ -337,7 +452,16 @@ def main():
             urls = [f"https://www.wanted.co.kr/api/v4/jobs/{m.group(1)}" for m in ids if m]
         # 잡코리아는 세션 단위 스로틀이 있다. 4워커 3req/s 로 돌리면 1,200건쯤에서
         # 전량 실패로 돌아선다(단건 요청은 여전히 200). 느리게 간다.
-        w, ps = (2, 1.2) if site == "잡코리아" else (4, 3.0)
+        # 사이트마다 견디는 속도가 다르다. 실측으로 정했다.
+        #   사람인   4워커 3req/s -> 6,400건에서 **IP 레벨 차단**(TCP connect 실패). 0.6 으로 낮춤
+        #   잡코리아 3req/s 로 정상. 한때 전량 실패해서 스로틀로 봤는데 오진이었다.
+        #     실제 원인은 data-gno 로 URL 을 조립한 것 — 7·9자리 gno 는 GI_Read 가 아니라
+        #     404 였다(유효 46%). 링크 형태를 고치니 fail=0 이다.
+        # 잡코리아는 워커를 늘려도 2.4~2.8 req/s 가 천장이다(4/8/12워커 실측).
+        # 12워커에서는 실패가 나기 시작한다. 4워커가 최적.
+        # 공고당 2요청(본문+상세요강 iframe)이라 실질 처리량은 그 절반이다.
+        RATE = {"잡코리아": (4, 3.0), "사람인": (1, 0.6)}
+        w, ps = RATE.get(site, (4, 3.0))
         run(site, urls, PARSER.get(site, p_text), ROOT.get(site, ""),
             workers=w, per_sec=ps)
 

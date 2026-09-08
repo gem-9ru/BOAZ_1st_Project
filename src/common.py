@@ -114,10 +114,17 @@ def fetch_many(site, urls, parse, workers=4, per_sec=2.0, label=""):
     """
     rl = RateLimiter(per_sec)
     lock = threading.Lock()
-    stat = {"ok": 0, "fail": 0, "skip": 0}
+    stat = {"ok": 0, "fail": 0, "skip": 0, "streak": 0}
 
     def work(u):
         if not site.allowed(u):
+            with lock: stat["skip"] += 1
+            return
+        # [차단 감지] 연속 실패가 쌓이면 사이트가 우리를 막은 것이다.
+        #   사람인에서 3req/s 로 6,400건을 돌렸더니 TCP connect 자체가 막혔고,
+        #   그 뒤로 워커 4개가 전부 물려 6분간 아무것도 못 하고 서 있었다.
+        #   실패만 세다 끝나면 시간만 태우므로 일찍 멈춘다.
+        if stat.get("streak", 0) >= 60:
             with lock: stat["skip"] += 1
             return
         for attempt in range(3):
@@ -131,10 +138,16 @@ def fetch_many(site, urls, parse, workers=4, per_sec=2.0, label=""):
                 with lock:
                     if row: site.rows.append(row); stat["ok"] += 1
                     else: stat["fail"] += 1
+                    stat["streak"] = 0
                 return
             except Exception:
                 if attempt == 2:
-                    with lock: stat["fail"] += 1
+                    with lock:
+                        stat["fail"] += 1
+                        stat["streak"] = stat.get("streak", 0) + 1
+                        if stat["streak"] == 60:
+                            print(f"    [{label}] 연속 실패 60건 — 차단으로 보고 중단",
+                                  file=sys.stderr, flush=True)
                 else:
                     time.sleep(2 ** attempt)
 

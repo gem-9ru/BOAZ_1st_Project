@@ -19,13 +19,29 @@
 목록에서 끝내면 안 된다. 여기서 모은 URL 을 src/duty_detail.py 가 이어받아 상세를 받는다.
 
 [목록 한 행에 들어 있는 것]  tr.devloopArea
-    data-gno                공고번호
+    data-gno                공고번호 — **URL 을 이걸로 조립하면 안 된다(아래)**
     td.tplCo a              회사명
     td.tplTit strong a      공고제목 + /Recruit/GI_Read/{gno}
     p.etc .cell             경력 / 학력 / 지역 / 고용형태 / 급여
     p.dsc                   **직무 키워드 전량** (예: "국제금융, 금융, 은행, 문서관리, …")
     data-gainfo dimension46 **전체 근무지역 목록** ("서울, 경기, 대구, 경북, 부산, 경남")
     span.date               마감일
+
+[중요 — 링크가 세 종류다]
+data-gno 로 `/Recruit/GI_Read/{gno}` 를 만들었더니 절반이 404 였다.
+실제 href 를 보면 공고 출처마다 형태가 다르다.
+
+    8자리  /Recruit/GI_Read/{gno}                     잡코리아 자체 공고
+    7자리  /Recruit/GI_Read/{gno}/Ext?siteCode=WN     워크넷 연계 공고
+    9자리  https://www.albamon.com/jobs/detail/{gno}  **알바몬 = 알바 공고**
+
+→ gno 로 조립하지 말고 목록의 href 를 그대로 쓴다.
+→ 알바몬 링크는 아르바이트라 데이터셋 대상이 아니다.
+  여기서 버리지 않고 외부원본ID 를 "albamon:{gno}" 로 남겨
+  정규화 단계가 출처를 보고 제외하게 한다.
+  (한때 고용형태에 '아르바이트' 를 덧붙여 알바 필터에 맡겼는데,
+   원래 고용형태가 '정규직' 인 행이 "정규직 아르바이트" 가 되면서
+   '정규/계약이 함께 있으면 유지' 규칙에 걸려 322건이 살아남았다.)
 
 특히 p.dsc 는 잡코리아가 공고에 붙인 직무 태그라 제목 파싱보다 훨씬 정확하고,
 학력 칸은 '대졸 이상 수요' 를 세는 데 그대로 쓰인다.
@@ -52,7 +68,7 @@ PAY = re.compile(r"만원|연봉|월급|시급|회사내규|면접")
 def main():
     s = Site("잡코리아부산", ROOT, delay=1.0)
     s.note("지역 필터(local=H000) 전수. 목록에 직무 태그·학력·전체지역이 모두 들어 있다")
-    s.extra_cols = ["학력", "급여", "지역표기"]    # 기본 12칸 밖이라 명시하지 않으면 save() 가 버린다
+    s.extra_cols = ["학력", "급여", "지역표기", "출처"]    # 기본 12칸 밖이라 명시하지 않으면 save() 가 버린다
     seen, empty = set(), 0
 
     s.get(ENTRY)                       # 세션에 검색조건(local=H000) 등록
@@ -83,6 +99,17 @@ def main():
 
             co = tr.select_one("td.tplCo a.link")
             tit = tr.select_one("td.tplTit .titBx strong a")
+            href = (tit.get("href") if tit else "") or ""
+            if not href:
+                continue
+            url = href if href.startswith("http") else ROOT + href
+            url = url.split("?")[0] if "albamon.com" in url else url
+            if "albamon.com" in url:
+                src = "albamon"
+            elif "/Ext" in href:
+                src = "worknet"
+            else:
+                src = "jobkorea"
             dsc = tr.select_one("td.tplTit p.dsc")
             cells = [c.get_text(" ", strip=True)
                      for c in tr.select("td.tplTit p.etc span.cell") if c.get_text(strip=True)]
@@ -129,9 +156,9 @@ def main():
                   경력=career, 고용형태=etype,
                   지역=region_all or region,
                   기술스택="", 마감일=deadline,
-                  공고URL=f"{ROOT}/Recruit/GI_Read/{gno}",
-                  외부원본ID=f"jobkorea:{gno}",
-                  학력=edu, 급여=pay, 지역표기=region,
+                  공고URL=url,
+                  외부원본ID=f"{src}:{gno}",
+                  학력=edu, 급여=pay, 지역표기=region, 출처=src,
                   수집시각=NOW())
         if new == 0:
             empty += 1
@@ -146,9 +173,11 @@ def main():
     s.save()
 
     # 목록만으로 직무를 얼마나 확보했는지
+    from collections import Counter
     got = sum(1 for r in s.rows if r.get("직무"))
     edu_got = sum(1 for r in s.rows if r.get("학력"))
-    print(f"  직무 태그 확보 {got:,}/{len(s.rows):,}  학력 {edu_got:,}", file=sys.stderr)
+    print(f"  직무 태그 {got:,}/{len(s.rows):,}  학력 {edu_got:,}", file=sys.stderr)
+    print("  출처별:", dict(Counter(r.get("출처") for r in s.rows)), file=sys.stderr)
 
 
 if __name__ == "__main__":
