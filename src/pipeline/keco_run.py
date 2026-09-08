@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pipeline.keco_v2 import Master, Classifier, tokens, norm, core_of, STOP  # noqa
+from pipeline import keco_manual                                            # noqa
 
 csv.field_size_limit(10 ** 9)
 BASE = Path(__file__).resolve().parents[2]
@@ -139,10 +140,30 @@ def cmd_build():
     base = list(rows[0].keys())
     cols = base + [c for c in add if c not in base]
 
+    # 수동분류 — 사람이 분류표를 보고 붙인 값. 미분류로 남는 공고에만 적용된다.
+    # build 를 다시 돌려도 작업이 살아 있어야 하므로 여기서 함께 반영한다.
+    mtok, mjob, mbad = keco_manual.load_manual(m)
+    if mbad:
+        print(f"!! 수동분류에 분류표에 없는 코드 {len(mbad)}개 — 무시하고 진행합니다")
+        for w, c in mbad[:5]:
+            print(f"     {w}: {c}")
+    if mtok or mjob:
+        print(f"수동분류 사전 — 토큰 {len(mtok):,}개 · 공고 {len(mjob):,}개")
+
     why_c, grade_c, lvl_c = collections.Counter(), collections.Counter(), collections.Counter()
     out = []
     for r in rows:
         code, why, grade, tok, cand = clf.assign(tokens(r.get("직무")), r.get("직종"))
+        if not code:                              # 미분류일 때만 수동분류를 얹는다
+            if r["통합키"] in mjob:               # 공고 시트가 토큰 시트보다 우선
+                code, why, tok, cand = mjob[r["통합키"]], "수동분류(공고)", "수동", []
+            else:
+                for t in tokens(r.get("직무")):
+                    if t in mtok:
+                        code, why, tok, cand = mtok[t], "수동분류(토큰)", "수동", []
+                        break
+            if code:
+                grade = "강" if len(code) == 6 else "중"
         rec = dict(r)
         if code:
             rec.update(m.levels(code))
@@ -166,7 +187,8 @@ def cmd_build():
     print(f"\n{OUT.relative_to(BASE)}  {n:,}건 · {len(cols)}컬럼")
     print("\n── 근거 ──")
     tot = 0
-    for k in ["고용24직접", "별칭일치", "학습사전", "상위합의", "미분류"]:
+    for k in ["고용24직접", "별칭일치", "학습사전", "상위합의",
+              "수동분류(공고)", "수동분류(토큰)", "미분류"]:
         print(f"  {k:<8} {why_c[k]:>6,}  {100*why_c[k]/n:5.1f}%"); tot += why_c[k]
     print(f"  {'합계':<8} {tot:>6,}  → {'전체포괄 OK' if tot == n else '누락!'}")
     print("\n── 확실도 ──")
