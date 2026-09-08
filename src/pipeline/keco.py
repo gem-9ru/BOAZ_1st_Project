@@ -29,7 +29,9 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parents[2]
 DATA, LOGS = BASE / "data", BASE / "logs"
-TABLE = DATA / "keco_직종표.csv"
+# data/ 최상위에 두면 normalize 의 `data/*.csv` 글롭에 사이트로 잡힌다.
+# 실제로 'keco_직종표' 라는 사이트가 생겨 정규화 결과에 388행이 섞였다.
+TABLE = DATA / "keco" / "직종표_v1_수집역산.csv"
 
 # KECO 2018 대분류는 **앞 1자리**다. 앞 2자리를 대분류로 보고 이름을 추측했다가
 # 304000(간호사)을 '농림어업' 으로 분류하는 사고가 났다.

@@ -361,6 +361,24 @@ def main():
                                sorted(group, key=lambda x: (SITE_RANK.get(x["사이트"], 99), -richness(x)))
                                if r.get(f)), "")
         detail_vals = {c: pick(c) for c in DETAIL}
+
+        # [수정] 한 묶음인 필드는 **같은 행에서** 골라야 한다.
+        #   급여최소는 A사이트, 급여최대는 B사이트에서 골라 오면
+        #     저장 "면접후결정 / 300만원 / (빈칸)"   원문 "면접후 결정"
+        #     저장 "시급 13000원 ~ 216"            원문 "시급 13000원 ~ 0원"
+        #   같은 값이 나온다. 122행이 이 상태였다(근무시간은 12행).
+        #   아래 주석의 채용인원과 같은 문제인데 급여·근무시간에는 적용이 안 돼 있었다.
+        #   금액이 든 행을 먼저 고른다 — "면접후 결정" 보다 정보가 많다.
+        def pick_row(fields, key, prefer=None):
+            cands = [r for r in group if r.get(key)]
+            if not cands:
+                return
+            cands.sort(key=lambda r: (0 if (prefer and r.get(prefer)) else 1,
+                                      SITE_RANK.get(r["사이트"], 99), -richness(r)))
+            detail_vals.update({c: cands[0].get(c, "") for c in fields})
+
+        pick_row(["급여형태", "급여최소", "급여최대", "급여"], "급여", prefer="급여최소")
+        pick_row(["근무요일", "근무시작", "근무종료", "근무시간"], "근무시간")
         # 원문은 '대표 사이트' 것을 쓴다. 값이 있는 아무 사이트나 고르면
         # 원문끼리 출처가 뒤섞여 대조가 안 된다.
         detail_vals.update({c: rep.get(c, "") for c in RAW})

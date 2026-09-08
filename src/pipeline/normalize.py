@@ -582,6 +582,12 @@ def main():
     # 하위 폴더에 둔다. (keco_직종표.csv 를 data/ 에 두었더니 'keco_직종표'
     # 라는 사이트로 읽혀 정규화 결과에 311행이 섞였다.)
     for p in sorted(glob.glob(str(DATA / "*.csv"))):
+        # 사이트 목록 파일만 받는다. 분류표·참조표가 섞여 들어오면
+        # 'keco_직종표' 같은 가짜 사이트가 생겨 정규화 결과가 오염된다.
+        with open(p, encoding="utf-8-sig") as _f:
+            _head = next(csv.reader(_f), [])
+        if "공고URL" not in _head or "공고제목" not in _head:
+            continue
         site = Path(p).stem
         # *_상세 / *_직무상세 는 공고 목록이 아니라 공고URL 로 붙이는 조인 테이블이다.
         # 여기서 걸러내지 않으면 공고 건수가 두 배로 부풀고 회사명 없는 행이 쏟아진다.
@@ -626,7 +632,10 @@ def main():
             region_src = r.get("지역") or d.get("_근무지역") or d.get("상세주소") or ""
             sido, sgg = norm_region(region_src)
             dl, dlk = dl_iso, dl_kind
-            ck, yrs = norm_career(r.get("경력"))
+            # 목록에 경력이 없는 사이트는 상세에서 채운다.
+            #   `_경력`      고용24 상세의 경력 칸
+            #   `_경력학력`   부산일자리정보망은 경력·학력을 한 칸에 담는다
+            ck, yrs = norm_career(r.get("경력") or d.get("_경력") or d.get("_경력학력"))
             hc, hck = norm_headcount(d.get("모집인원"))
             # 한 칸에 여러 정보가 담긴 값을 쪼갠다(원문은 그대로 함께 싣는다)
             pay_raw = detail_join.clean_pay(d.get("급여"))
@@ -641,7 +650,8 @@ def main():
             kname = kmeta.get("직종명", "")
             kmajor = kmeta.get("대분류코드", "")
             kmajor_nm = kmeta.get("대분류명", "")
-            co = r.get("회사명", "")
+            # 목록에 회사명이 없으면 상세의 기관명을 쓴다.
+            co = r.get("회사명", "") or d.get("_기관명", "")
             # [수정] '잡코리아추가' 는 사이트맵 밖 공고를 따로 받은 것일 뿐 같은 잡코리아다.
             #   별도 사이트명으로 두면 중복제거가 '사이트 간 중복' 으로 잘못 집계하고
             #   (교집합 21,285건), 통합 결과의 '게재사이트수' 도 부풀려진다.
@@ -676,7 +686,9 @@ def main():
                 "급여": pay_raw,
                 "채용인원": hc, "채용인원구분": hck,
                 "모집인원원문": d.get("모집인원", ""),
-                "학력": d.get("학력") or r.get("학력", ""),
+                # [누락 수정] 부산일자리정보망은 학력을 `경력학력조건` 칸에 담는다.
+                #   `_경력학력` 로 실어 놓고 아무도 쓰지 않아 4,935건이 비어 있었다.
+                "학력": d.get("학력") or r.get("학력", "") or d.get("_경력학력", ""),
                 "경력구분": ck, "최소연차": yrs,
                 "고용형태": r.get("고용형태") or d.get("_고용형태", ""),
                 "고용형태표준": std, "알바여부": "",

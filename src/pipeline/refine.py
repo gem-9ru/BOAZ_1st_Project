@@ -65,6 +65,9 @@ def fold_edu(v):
     if not v:
         return "미기재"
     head = re.split(r"[~〜]", v)[0].strip() or v      # 범위면 하한
+    # 부산일자리정보망은 `대학졸업(2,3년)이상` 처럼 `졸업` 을 끼워 적는다.
+    # 떼면 `대학(2,3년)` 이 되어 다른 사이트 표기와 같아진다.
+    head = head.replace("졸업", "")
     for pat, label in _EDU:
         if re.search(pat, head):
             return label
