@@ -30,7 +30,9 @@
 
 워크넷 원본은 내려갔는데 잡코리아에는 아직 남아 있는 공고다.
 차단이나 파싱 실패가 아니라 재시도해도 소용없다.
-※ 응답이 200 이고 HTML 도 정상이라 조용히 실패한다. 본문에서 문구로 구분한다.
+※ 응답이 200 이고 HTML 도 정상이라 조용히 실패한다. **본문 길이**로 구분한다
+  (정상 330KB / 마감 1.2KB). 문구로 거르면 정상 페이지의 메시지 템플릿에도
+  같은 말이 있어 전부 걸러진다.
 """
 import csv, json, re, sys
 from bs4 import BeautifulSoup
@@ -41,19 +43,26 @@ DETAIL = (ROOT + "/wk/a/b/1500/empDetailAuthView.do"
                  "?wantedAuthNo={}&infoTypeGroup=tb_workinfoworknet")
 SRC = DATA / "잡코리아부산.csv"
 OUT = DATA / "고용24_상세.csv"
-COLS = ["공고URL", "담당업무", "직종", "직무키워드", "학력", "경력",
+COLS = ["공고URL", "직종코드", "담당업무", "직종", "직무키워드", "학력", "경력",
         "급여", "근무형태", "상세주소", "모집인원", "수집시각"]
 
 CLEAN = lambda t: re.sub(r"\s+", " ", (t or "")).strip()
 AUTH = re.compile(r"wantedAuthNo=([A-Za-z0-9]+)")
+# 한국고용직업분류(KECO) 6자리 코드. 입사지원 팝업 파라미터에 들어 있다.
+#   jobsCd: "561101"  ↔  직종 "건물 청소원(공공건물,아파트,사무실,병원,상가,공장 등)"
+# 화면에는 코드가 안 보이고 이름만 나온다. 코드가 있어야 분류 키로 쓸 수 있다.
+JOBSCD = re.compile(r'jobsCd\s*:\s*"(\d{4,8})"')
 
 
 def parse(url, resp):
     """work24 상세. url 에 원래 잡코리아 URL 을 되돌려 넣기 위해 MAP 을 쓴다.
 
-    마감된 공고는 '마감된 채용정보입니다' 스크립트만 담긴 폼이 200 으로 온다.
+    마감된 공고는 자동제출 폼(1.2KB)만 200 으로 온다.
+    ※ '마감된 채용정보' 문구로 거르면 안 된다. 정상 페이지의 스크립트에도
+      같은 문구가 메시지 템플릿으로 들어 있어서 전부 걸러진다(ok=0 사고).
+      본문 길이로 판별한다.
     """
-    if "마감된 채용정보" in resp.text:
+    if len(resp.text) < 5000:
         return None
     s = BeautifulSoup(resp.text, "html.parser")
     for t in s(["script", "style"]):
@@ -62,6 +71,10 @@ def parse(url, resp):
     r = {c: "" for c in COLS}
     r["공고URL"] = MAP.get(url, url)
     r["수집시각"] = NOW()
+
+    m = JOBSCD.search(resp.text)
+    if m:
+        r["직종코드"] = m.group(1)
 
     m = re.search(r"직무내용\s*\n(.{10,1500}?)\n\s*(?:더보기|접기|모집\s?인원|$)", txt, re.S)
     if m:

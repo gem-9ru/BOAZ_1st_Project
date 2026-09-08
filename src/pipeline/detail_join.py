@@ -22,10 +22,16 @@ def _sources():
     상세 수집은 몇 시간씩 걸리고 CSV 는 끝나야 쓰인다.
     수집 도중에도 파이프라인을 돌려 중간 결과를 확인할 수 있어야 하므로
     logs/*.ckpt.jsonl 도 같은 형태로 읽어들인다.
-    같은 공고가 양쪽에 있으면 CSV(완료본)를 우선한다.
+    같은 이름이 양쪽에 있으면 **더 최근에 쓰인 쪽**을 쓴다.
+    파서를 고쳐 재수집하는 동안에는 체크포인트가 CSV 보다 새롭고 컬럼도 많다.
+    (예전에는 CSV 를 무조건 우선해서, 직종코드를 새로 받는 중인데도
+     코드 없는 옛 CSV 가 계속 읽혔다.)
     """
     seen_name = set()
     for p in sorted(glob.glob(str(DATA / "*상세.csv"))):
+        ck = LOGS / f"{Path(p).stem}.ckpt.jsonl"
+        if ck.exists() and ck.stat().st_mtime > Path(p).stat().st_mtime:
+            continue                      # 체크포인트가 더 새롭다 → 아래에서 읽는다
         seen_name.add(Path(p).stem)
         with open(p, encoding="utf-8-sig") as f:
             yield p, list(csv.DictReader(f))
@@ -50,7 +56,7 @@ MAP = {
     "직무내용": "담당업무", "담당업무": "담당업무",
     "모집분야": "직무상세", "직무키워드": "직무키워드",
     "자격요건": "자격요건", "우대사항": "우대사항",
-    "직종": "직종", "업종": "업종", "직급직책": "직급직책",
+    "직종": "직종", "직종코드": "직종코드", "업종": "업종", "직급직책": "직급직책",
     "근무시간": "근무시간", "근무형태": "근무형태상세", "급여": "급여",
     "모집인원": "모집인원", "학력": "학력", "상세주소": "상세주소",
     "고용형태": "_고용형태", "근무지역": "_근무지역", "원출처URL": "_원출처URL",
@@ -83,7 +89,7 @@ def clean_duty(v):
 
 
 DETAIL_COLS = ["직무상세", "직무키워드", "담당업무", "자격요건", "우대사항",
-               "직종", "업종", "직급직책", "근무형태상세", "근무시간",
+               "직종", "직종코드", "업종", "직급직책", "근무형태상세", "근무시간",
                "급여", "모집인원", "학력", "상세주소"]
 
 
@@ -145,3 +151,74 @@ def stats(det):
     n = max(len(det), 1)
     return {c: sum(1 for d in det.values() if d.get(c)) * 100 // n
             for c in DETAIL_COLS}
+
+
+# ---------------------------------------------------------------------------
+# 한 칸에 여러 정보가 담긴 값 쪼개기
+# ---------------------------------------------------------------------------
+# "주5일(월~금) 09:00 ~ 18:00" 은 근무요일·시작·종료 세 가지다.
+# "연봉 3,000만원 ~ 4,000만원" 은 급여형태·최소·최대 세 가지다.
+# 원문은 그대로 두고 쪼갠 값을 옆에 함께 싣는다.
+
+_PAYKIND = re.compile(r"(연봉|월급|주급|일급|시급|건별|성과급|협의|면접\s*후\s*결정|회사\s*내규)")
+_MONEY = re.compile(r"([\d,]{2,})\s*(만원|원)")
+_TIME = re.compile(r"(\d{1,2})\s*[:시]\s*(\d{0,2})")
+_DAYS = re.compile(r"(주\s?\d일(?:\([^)]{1,12}\))?|격일제?|주말|평일|월~금|월~토|교대|"
+                   r"[23]교대|탄력근무제|시간제|자율출퇴근|협의)")
+
+# 급여 칸에 엉뚱한 문장이 들어오는 경우가 있다(라벨 파싱이 옆 문단을 물었을 때).
+# "조건 학력무관", "정보 신입 / 평균 채용인원 11명" 처럼.
+# 급여 어휘로 시작하지 않고 금액도 없으면 급여로 인정하지 않는다.
+def clean_pay(v):
+    v = (v or "").strip()
+    if not v:
+        return ""
+    if not _PAYKIND.search(v[:20]) and not _MONEY.search(v[:40]):
+        return ""
+    return v[:200]
+
+
+def split_pay(v):
+    """(급여형태, 최소, 최대) — 금액은 만원 단위 정수 문자열."""
+    v = (v or "").strip()
+    if not v:
+        return "", "", ""
+    k = _PAYKIND.search(v)
+    kind = k.group(1) if k else ""
+    kind = {"면접 후 결정": "면접후결정", "면접후 결정": "면접후결정",
+            "회사 내규": "회사내규", "회사내규": "회사내규"}.get(kind.replace("  ", " "), kind)
+    nums = []
+    for m in _MONEY.finditer(v):
+        n = int(m.group(1).replace(",", ""))
+        if m.group(2) == "원":
+            if n < 100000:          # 시급·일급은 원 단위 그대로 둔다
+                nums.append(n)
+                continue
+            n = n // 10000
+        nums.append(n)
+    nums = [n for n in nums if n > 0]
+    lo = str(nums[0]) if nums else ""
+    hi = str(nums[1]) if len(nums) > 1 else ""
+    if hi and hi == "0":            # "3700만원 ~ 0만원" 은 상한 미기재다
+        hi = ""
+    return kind, lo, hi
+
+
+def split_worktime(v):
+    """(근무요일, 시작, 종료)"""
+    v = (v or "").strip()
+    if not v:
+        return "", "", ""
+    d = _DAYS.search(v)
+    days = d.group(1) if d else ""
+    ts = _TIME.findall(v)
+    fmt = lambda h, m: f"{int(h):02d}:{(m or '00'):0>2}"
+    start = fmt(*ts[0]) if ts else ""
+    end = fmt(*ts[1]) if len(ts) > 1 else ""
+    return days, start, end
+
+
+def clean_addr(v):
+    """지도보기 같은 UI 문구를 뗀다."""
+    v = re.sub(r"\s*(지도보기|약도|로드뷰|길찾기)\s*$", "", (v or "").strip())
+    return v[:200]
