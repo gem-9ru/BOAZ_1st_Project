@@ -631,6 +631,14 @@ def main():
             # 지역도 상세가 더 정확하다(목록은 시군구가 비는 경우가 많다).
             region_src = r.get("지역") or d.get("_근무지역") or d.get("상세주소") or ""
             sido, sgg = norm_region(region_src)
+            # 잡코리아 부산 목록은 `지역` 에 광역만 나열하고(`서울, 경기, 부산`)
+            # `지역표기` 에 실제 시군구를 담는다(`부산 해운대구 외`).
+            # 시군구를 못 뽑았을 때만 쓴다 — 이미 뽑힌 값은 상세주소 정본일 수 있다.
+            if not sgg and (r.get("지역표기") or "").strip():
+                _sd, _sg = norm_region(r["지역표기"])
+                if _sg:
+                    sgg, region_src = _sg, r["지역표기"]
+                    sido = sido or _sd
             dl, dlk = dl_iso, dl_kind
             # 목록에 경력이 없는 사이트는 상세에서 채운다.
             #   `_경력`      고용24 상세의 경력 칸
