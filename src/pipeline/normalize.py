@@ -462,7 +462,8 @@ def norm_career(s):
     s = (s or "").strip()
     if not s:
         return "", ""
-    if re.search(r"무관|전체|any", s, re.I):
+    # "관계없음" 은 부산일자리정보망 표기다. 758건이 '기타' 로 빠지고 있었다.
+    if re.search(r"무관|전체|관계없음|상관없음|해당없음|제한없음|any", s, re.I):
         return "무관", "0"
     if re.search(r"신입", s) and not re.search(r"경력", s):
         return "신입", "0"
@@ -471,7 +472,9 @@ def norm_career(s):
         return "경력", m.group(1)
     if re.search(r"경력", s):
         return "경력", ""
-    return "기타", ""
+    # 경력 칸에 날짜·고용형태가 들어온 행이 있다(상위 파싱의 컬럼 밀림).
+    # '기타' 라는 카테고리를 만들어 두면 집계에서 실제 값처럼 세어진다. 미기재로 둔다.
+    return "", ""
 
 # --------------------------------------------------------------------------
 ID_PAT = [

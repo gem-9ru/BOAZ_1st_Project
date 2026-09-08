@@ -52,6 +52,11 @@ def main():
     shutil.copy(BASE / "부산" / "부산_직종별_집계.csv", OUT / "직종별_건수.csv")
     shutil.copy(BASE / "부산" / "부산_직종대분류_집계.csv", OUT / "직종대분류_건수.csv")
     shutil.copy(BASE / "data" / "keco" / "직종코드_계층.csv", OUT / "직종코드_계층표.csv")
+    # 대시보드가 실제로 물릴 파일. 위 원본은 검증·추적용이다.
+    for f in ["부산_공고_분석용.csv", "직종대분류_지표.csv", "시군구_직종대분류.csv"]:
+        src = BASE / "분석" / f
+        if src.exists():
+            shutil.copy(src, OUT / f)
 
     print(f"  -> {OUT}/{csv_name}  ({n:,}건, 컬럼 {len(rows[0])}개)")
     print(f"     확실도 " + " / ".join(f"{k} {conf[k]:,}" for k in ("강", "중", "약") if conf[k]))

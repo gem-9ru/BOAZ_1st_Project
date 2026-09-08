@@ -162,6 +162,10 @@ def stats(det):
 
 _PAYKIND = re.compile(r"(연봉|월급|주급|일급|시급|건별|성과급|협의|면접\s*후\s*결정|회사\s*내규)")
 _MONEY = re.compile(r"([\d,]{2,})\s*(만원|원)")
+# "연봉 5,027~7,078만원" 처럼 단위가 **뒤쪽 숫자에만** 붙는 표기가 흔하다.
+# _MONEY 는 숫자 뒤에 단위를 요구하므로 5,027 을 놓치고 7,078 만 잡아
+# 하한 칸에 상한값이 들어갔다(1,853행). 미리 단위를 양쪽에 펴 준다.
+_PAYRANGE = re.compile(r"([\d,]{2,})\s*[~\-–]\s*([\d,]{2,})\s*(만원|원)")
 _TIME = re.compile(r"(\d{1,2})\s*[:시]\s*(\d{0,2})")
 _DAYS = re.compile(r"(주\s?\d일(?:\([^)]{1,12}\))?|격일제?|주말|평일|월~금|월~토|교대|"
                    r"[23]교대|탄력근무제|시간제|자율출퇴근|협의)")
@@ -183,6 +187,7 @@ def split_pay(v):
     v = (v or "").strip()
     if not v:
         return "", "", ""
+    v = _PAYRANGE.sub(lambda m: f"{m.group(1)}{m.group(3)} ~ {m.group(2)}{m.group(3)}", v)
     k = _PAYKIND.search(v)
     kind = k.group(1) if k else ""
     kind = {"면접 후 결정": "면접후결정", "면접후 결정": "면접후결정",
@@ -201,6 +206,8 @@ def split_pay(v):
     hi = str(nums[1]) if len(nums) > 1 else ""
     if hi and hi == "0":            # "3700만원 ~ 0만원" 은 상한 미기재다
         hi = ""
+    if hi and int(lo) > int(hi):    # 표기 순서가 뒤집힌 공고
+        lo, hi = hi, lo
     return kind, lo, hi
 
 
