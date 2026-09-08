@@ -571,6 +571,9 @@ def main():
     print(f"KECO 직종표 {len(kc.meta):,}개 로드")
     # 원출처 열쇠로 붙이는 교차 연결표(사람인 상세가 차단으로 막힌 몫을 메운다)
     by_origin = detail.pop("__by_origin__", {})
+    _dstat = detail.pop("__stat__", {})
+    if _dstat.get("원출처_역방향_보강"):
+        print(f"  원출처 역방향 보강 {_dstat['원출처_역방향_보강']:,}칸")
     if detail:
         print(f"상세 보강 데이터 {len(detail):,}건 로드")
         for c, pct in detail_join.stats(detail).items():

@@ -162,7 +162,30 @@ def load():
             k = _origin_key(r.get("원출처URL"))
             if k and k not in by_origin:
                 by_origin[k] = d
+    # [양방향] 지금까지는 한 방향만 연결됐다.
+    #   O  잡코리아·사람인 **목록** 행  <-  부산잡 상세 (by_origin)
+    #   X  부산잡 **목록** 행          <-  잡코리아·사람인 상세
+    # 06_알려진_한계.md 는 "잡코리아분 5,751건은 GI_No 교차 연결로 잡코리아
+    # 상세에서 메운다" 고 적어 두었지만 반대 방향이 없었다. 중복병합이 대부분
+    # 메우지만, 부산잡 행이 잡코리아 행과 안 묶인 3,558건은 그대로 비어 있었다.
+    by_ownkey = {}
+    for u, d in out.items():
+        k = _own_key(u)
+        if k:
+            by_ownkey.setdefault(k, d)
+    filled = 0
+    for u, d in out.items():
+        k = _origin_key(d.get("_원출처URL"))
+        src = by_ownkey.get(k) if k else None
+        if not src or src is d:
+            continue
+        for c, v in src.items():
+            if c.startswith("_") or not v or d.get(c):
+                continue
+            d[c] = v
+            filled += 1
     out["__by_origin__"] = by_origin
+    out["__stat__"] = {"원출처_역방향_보강": filled}
     return out
 
 
