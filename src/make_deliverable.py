@@ -10,7 +10,8 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = Path.home() / "Downloads" / "부산_채용공고_final"
-SRC = BASE / "부산" / "부산_공고_통합.csv"
+# 직종코드가 붙은 쪽을 배포한다. 직무 기준 집계는 이 컬럼 없이는 안 된다.
+SRC = BASE / "부산" / "부산_공고_직종분류.csv"
 
 
 def pct(a, b):
@@ -48,12 +49,19 @@ def main():
         old.unlink()
     shutil.copy(SRC, OUT / csv_name)
     shutil.copy(BASE / "부산" / "부산_사이트별.csv", OUT / "사이트별_건수.csv")
+    shutil.copy(BASE / "부산" / "부산_직종별_집계.csv", OUT / "직종별_건수.csv")
+    shutil.copy(BASE / "부산" / "부산_직종대분류_집계.csv", OUT / "직종대분류_건수.csv")
+    shutil.copy(BASE / "data" / "keco" / "직종코드_계층.csv", OUT / "직종코드_계층표.csv")
 
     print(f"  -> {OUT}/{csv_name}  ({n:,}건, 컬럼 {len(rows[0])}개)")
     print(f"     확실도 " + " / ".join(f"{k} {conf[k]:,}" for k in ("강", "중", "약") if conf[k]))
     print(f"     담당업무 {pct(fill['담당업무'], n)}  직종 {pct(fill['직종'], n)}  "
           f"학력 {pct(fill['학력'], n)}  채용인원 {pct(fill['채용인원'], n)}")
     print(f"     채용인원 명시 {len(hc):,}건 합계 {sum(hc):,}명")
+    kg = collections.Counter(r.get("직종코드확실도", "") for r in rows)
+    kd = collections.Counter(str(r.get("직종코드깊이", "")) for r in rows)
+    print("     직종코드 확실도 " + " / ".join(f"{k} {kg[k]:,}" for k in ("강", "중", "약", "미분류")))
+    print(f"     직종코드 세세분류 {kd['6']:,} / 대분류만 {kd['1']:,} / 미분류 {kd['0']:,}")
     print("\n  설명.md 에 넣을 값 —— 아래를 문서에 반영하세요")
     print("   사이트:", ", ".join(f"{k} {v:,}" for k, v in site.most_common(6)))
     print("   시군구:", ", ".join(f"{k} {v:,}" for k, v in sgg.most_common(5)))
@@ -61,6 +69,8 @@ def main():
     print("   직무  :", ", ".join(f"{k} {v:,}" for k, v in duty.most_common(8)))
     if job:
         print("   직종  :", ", ".join(f"{k} {v:,}" for k, v in job.most_common(6)))
+    maj = collections.Counter(r["직종대분류명"] for r in rows if r.get("직종대분류명"))
+    print("   직종대분류:", ", ".join(f"{k} {v:,}" for k, v in maj.most_common(10)))
     print("   학력  :", ", ".join(f"{k} {v:,}" for k, v in edu.most_common(6)))
     print("   경력  :", ", ".join(f"{k} {v:,}" for k, v in car.most_common(4)))
 
