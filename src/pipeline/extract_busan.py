@@ -125,6 +125,23 @@ def main():
         print(f"\n보류(제목엔 부산·근무지주소는 타지역) {len(hold):,}건 -> 부산_판정보류.csv")
 
     OUT.mkdir(exist_ok=True)
+
+    # 통합키를 원본 행에도 채운다.
+    #   `공고_정규화.csv` 의 통합키 칸은 비어 있다 — dedup 이 나중에 부여하고
+    #   그 대응표는 `중복매핑.csv` 에 있다. 여기서 붙여 주지 않으면
+    #   원본 파일의 통합키가 전부 빈칸이 되어 통합본과 조인할 수 없다.
+    #   (병합 과정에서 값이 버려졌는지 검증하려다 이게 막혔다.)
+    RANK = {"강": 0, "중": 1, "약": 2}
+    key_of = {}
+    mp = BUILD / "중복매핑.csv"
+    if mp.exists():
+        for r in csv.DictReader(open(mp, encoding="utf-8-sig")):
+            key_of[(r["사이트"], r["공고URL"])] = r["통합키"]
+    for r in busan:
+        r["통합키"] = key_of.get((r["사이트"], r["공고URL"]), "")
+    filled = sum(1 for r in busan if r["통합키"])
+    print(f"  통합키 부여 {filled:,}/{len(busan):,}행")
+
     dump(OUT / "부산_공고_원본.csv", cols + ["부산판정근거", "부산판정확실도"], busan)
     if hold:
         dump(OUT / "부산_판정보류.csv", cols + ["부산판정근거"], hold)
@@ -145,15 +162,9 @@ def main():
     #   → 원본에서 부산으로 판정된 행의 통합키를 모아 그걸로 거른다.
     #   판정근거·확실도는 그룹 안에서 가장 강한 것을 남긴다.
     #   통합키는 정규화 파일이 아니라 중복매핑에 있다(dedup 이 부여한다).
-    RANK = {"강": 0, "중": 1, "약": 2}
-    key_of = {}
-    mp = BUILD / "중복매핑.csv"
-    if mp.exists():
-        for r in csv.DictReader(open(mp, encoding="utf-8-sig")):
-            key_of[(r["사이트"], r["공고URL"])] = r["통합키"]
     best = {}
     for r in busan:
-        k = key_of.get((r["사이트"], r["공고URL"]))
+        k = r["통합키"]
         if not k:
             continue
         cur = best.get(k)
