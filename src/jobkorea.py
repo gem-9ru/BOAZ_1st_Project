@@ -12,7 +12,7 @@
         전면차단이므로 일반 브라우저 UA 로만 접근한다.
 """
 import re
-from common import Site, NOW, fetch_many_ckpt, parse_jobposting_ld
+from common import Site, NOW, fetch_many_ckpt, parse_jobposting_ld, LD_EXTRA_COLS
 
 INDEX = "https://www.jobkorea.co.kr/content/sitemapindex.xml"
 
@@ -25,6 +25,7 @@ parse = parse_jobposting_ld
 
 def main():
     s = Site("잡코리아", "https://www.jobkorea.co.kr")
+    s.extra_cols = LD_EXTRA_COLS    # JSON-LD 가 주는 학력·급여·주소 등
     s.note("목록 페이지네이션 차단 → sitemap agi_*.xml + 상세 JSON-LD 방식으로 전환")
     maps = [l for l in re.findall(r"<loc>([^<]+)</loc>", s.get(INDEX).text) if "/agi/" in l]
     s.note(f"agi 사이트맵 {len(maps)}개 발견 (전체 공고 약 {len(maps)*5000:,}건 규모)")

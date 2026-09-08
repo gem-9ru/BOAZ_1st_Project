@@ -229,6 +229,34 @@ def parse_jobposting_ld(url, resp, tech=""):
         if m:
             duty = m.group(1).strip(" ,·/|")[:120]
 
+    # [누락 수정] JSON-LD 는 아래 필드도 표준으로 담는데 뽑지 않고 버리고 있었다.
+    #   표본 3건 실측: educationRequirements 3/3 · baseSalary 1/3 존재.
+    #   industry·totalJobOpenings·workHours 는 잡코리아가 안 준다(표본 0/3).
+    #   목록 단계에서 이걸 받아 두면 상세 재수집 없이 학력·급여가 채워진다.
+    #   ※ 수집기의 `extra_cols` 에 넣지 않으면 save() 가 버린다.
+    edu = strip(d.get("educationRequirements"))[:40]
+    bs = d.get("baseSalary") or {}
+    pay = ""
+    if isinstance(bs, dict):
+        v = bs.get("value") or {}
+        if isinstance(v, dict):
+            unit = {"HOUR": "시급", "DAY": "일급", "WEEK": "주급",
+                    "MONTH": "월급", "YEAR": "연봉"}.get(str(v.get("unitText", "")).upper(), "")
+            lo, hi = v.get("minValue") or v.get("value"), v.get("maxValue")
+            if lo:
+                pay = f"{unit} {int(float(lo)):,}원" + (f" ~ {int(float(hi)):,}원" if hi else "")
+        elif bs.get("value"):
+            pay = strip(bs.get("value"))[:40]
+    industry = strip(d.get("industry"))[:60]
+    openings = strip(d.get("totalJobOpenings"))[:10]
+    hours = strip(d.get("workHours"))[:60]
+    # description 은 직무로 쓰면 안 되는 안내문이지만(위 [중대 수정] 참고)
+    # "근무지는 부산 동구 중앙대로 197 (초량동)이며" 처럼 **주소**를 담고 있다.
+    addr_txt = ""
+    m = _re.search(r"근무지는\s+(.{4,80}?)\s*(?:이며|입니다|이고|,|\.)", strip(d.get("description")))
+    if m:
+        addr_txt = m.group(1).strip()
+
     return {"회사명": org, "공고제목": d.get("title", ""),
             "직무": duty[:150],
             "경력": strip(d.get("experienceRequirements"))[:60],
@@ -236,7 +264,16 @@ def parse_jobposting_ld(url, resp, tech=""):
             "지역": region or strip(loc.get("name") if isinstance(loc, dict) else "")[:40],
             "기술스택": tech,
             "마감일": str(d.get("validThrough", ""))[:10],
+            "학력": edu, "급여": pay, "업종": industry,
+            "모집인원": openings, "근무시간": hours,
+            "상세주소": addr_txt, "게시일": str(d.get("datePosted", ""))[:10],
             "공고URL": url, "수집시각": time.strftime("%Y-%m-%d %H:%M:%S")}
+
+
+# JSON-LD 파서가 돌려주는 기본 12칸 밖 컬럼. 이 파서를 쓰는 수집기는
+#   s.extra_cols = LD_EXTRA_COLS
+# 로 선언해야 save() 가 버리지 않는다.
+LD_EXTRA_COLS = ["학력", "급여", "업종", "모집인원", "근무시간", "상세주소", "게시일"]
 
 
 # ---------------------------------------------------------------------------

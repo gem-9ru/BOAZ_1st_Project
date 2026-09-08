@@ -9,7 +9,7 @@
 import json
 import re
 from bs4 import BeautifulSoup
-from common import Site, fetch_many_ckpt, parse_jobposting_ld
+from common import Site, fetch_many_ckpt, parse_jobposting_ld, LD_EXTRA_COLS
 
 
 def parse(u, r):
@@ -68,6 +68,7 @@ SITEMAP = "https://career.rememberapp.co.kr/sitemap-jobs.xml"
 
 def main():
     s = Site("리멤버커리어", "https://career.rememberapp.co.kr")
+    s.extra_cols = LD_EXTRA_COLS    # JSON-LD 가 주는 학력·급여·주소 등
     urls = re.findall(r"<loc>([^<]+)</loc>", s.get(SITEMAP).text)
     # [변경] 표본 900건 → 전량. 중단 대비 체크포인트(JSONL)로 이어받는다.
     s.note(f"sitemap-jobs.xml 공고 URL {len(urls):,}건 전량 수집")

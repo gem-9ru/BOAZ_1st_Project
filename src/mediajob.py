@@ -10,7 +10,7 @@
 """
 import re
 from bs4 import BeautifulSoup
-from common import Site, fetch_many, parse_jobposting_ld
+from common import Site, fetch_many, parse_jobposting_ld, LD_EXTRA_COLS
 
 ROOT = "https://www.mediajob.co.kr"
 LIMIT = 220
@@ -48,6 +48,7 @@ def parse(u, r):
 
 def main():
     s = Site("미디어잡", ROOT)
+    s.extra_cols = LD_EXTRA_COLS    # JSON-LD 가 주는 학력·급여·주소 등
     s.note("robots.txt Crawl-delay: 5 준수 → 0.2 req/s, 동시성 1")
     urls = set()
     for page in [ROOT + "/", ROOT + "/recruit/recruit.htm"]:

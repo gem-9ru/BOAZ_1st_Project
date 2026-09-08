@@ -18,7 +18,7 @@
 """
 import csv, json, re
 from pathlib import Path
-from common import Site, fetch_many_ckpt, parse_jobposting_ld, LOGS, DATA
+from common import Site, fetch_many_ckpt, parse_jobposting_ld, LOGS, DATA, LD_EXTRA_COLS
 
 def collected_ids():
     """본 잡코리아 수집분(체크포인트 + CSV)의 공고번호."""
@@ -46,6 +46,7 @@ def collected_ids():
 
 def main():
     s = Site("잡코리아추가", "https://www.jobkorea.co.kr", delay=0.5)
+    s.extra_cols = LD_EXTRA_COLS    # JSON-LD 가 주는 학력·급여·주소 등
     have = collected_ids()
     s.note(f"본 수집분 공고번호 {len(have):,}개 확인")
 

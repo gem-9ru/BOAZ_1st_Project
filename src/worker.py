@@ -10,7 +10,7 @@
 """
 import csv, os, re, sys
 from bs4 import BeautifulSoup
-from common import Site, fetch_many, parse_jobposting_ld, DATA
+from common import Site, fetch_many, parse_jobposting_ld, DATA, LD_EXTRA_COLS
 
 ROOT = "https://www.worker.co.kr"
 CATS = ["all", "eng", "con", "ccp", "int", "hh"]
@@ -32,6 +32,7 @@ def parse(u, r):
 
 def main():
     s = Site("건설워커", ROOT)
+    s.extra_cols = LD_EXTRA_COLS    # JSON-LD 가 주는 학력·급여·주소 등
     s.note("euc-kr 강제 디코딩 적용 (Content-Type 에 charset 누락)")
     s.note("list.asp?page=N 무효 확인 → jobid 카테고리 순회로 대체")
     urls = {}          # no -> 정규화 URL
