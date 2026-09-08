@@ -57,6 +57,31 @@ MAP = {
     "경력학력조건": "_경력학력", "기관명": "_기관명", "채용분야": "직무상세",
 }
 
+# 절편 추출이 앞 라벨을 물고 오는 경우가 있다.
+#   "인원 근무지 수신 RM ※ 수신 RM(수신 마케팅 전문인력) …"
+#   "자격요건 사무보조 및 고객응대 사원 …"
+# 값을 다시 받지 않고 여기서 걷어낸다(이미 수집한 것에도 적용된다).
+_LEAD = re.compile(
+    r"^(?:\s*(?:자격\s?요건|지원\s?자격|우대\s?사항|모집\s?분야|모집\s?부문|모집\s?인원|"
+    r"인원|근무지|근무\s?조건|담당\s?업무|주요\s?업무|업무\s?내용|직무\s?내용|"
+    r"이런\s?업무를\s?해요|Key\s+Responsibilities)\s*[:：]?\s*)+", re.I)
+_WRAP = re.compile(r"^[\(\[]\s*|\s*[\)\]]$")
+
+
+def clean_duty(v):
+    v = (v or "").strip()
+    if not v:
+        return ""
+    prev = None
+    while prev != v:                 # 라벨이 두세 개 겹쳐 붙는 경우가 있다
+        prev = v
+        v = _LEAD.sub("", v).strip()
+        # "(Key Responsibilities) …" 처럼 라벨이 괄호에 싸여 오기도 한다
+        v = re.sub(r"^[\(\[][^)\]]{0,30}[\)\]]\s*", "", v).strip() if _LEAD.search(
+            re.sub(r"^[\(\[]|[\)\]]", "", v[:40])) else v
+    return v.strip(" ·ㆍ-–—:：,")
+
+
 DETAIL_COLS = ["직무상세", "직무키워드", "담당업무", "자격요건", "우대사항",
                "직종", "업종", "직급직책", "근무형태상세", "근무시간",
                "급여", "모집인원", "학력", "상세주소"]
@@ -108,7 +133,7 @@ def load():
                 v = (r.get(src) or "").strip()
                 # 먼저 채워진 값을 덮어쓰지 않는다(사이트 전용 파서 > 범용 파서).
                 if v and not d.get(dst):
-                    d[dst] = v
+                    d[dst] = clean_duty(v) if dst in ("담당업무", "자격요건", "우대사항") else v
             k = _origin_key(r.get("원출처URL"))
             if k and k not in by_origin:
                 by_origin[k] = d

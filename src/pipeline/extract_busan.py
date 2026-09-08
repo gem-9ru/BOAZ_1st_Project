@@ -138,15 +138,42 @@ def main():
         print(f"   {s:<16}{n:>8,}")
 
     # 통합 마스터가 있으면 부산분만 골라낸다
+    # [수정] 통합본은 원본과 **같은 판정**을 써야 한다.
+    #   예전에는 여기서 "시도=부산 or 부산 시군구 or 부산일자리정보망" 이라는
+    #   더 단순한 규칙을 따로 썼다. 그래서 근무지주소·다지역·제목으로 잡아낸 공고가
+    #   원본에는 있는데 통합본에는 없는 불일치가 생겼다.
+    #   → 원본에서 부산으로 판정된 행의 통합키를 모아 그걸로 거른다.
+    #   판정근거·확실도는 그룹 안에서 가장 강한 것을 남긴다.
+    #   통합키는 정규화 파일이 아니라 중복매핑에 있다(dedup 이 부여한다).
+    RANK = {"강": 0, "중": 1, "약": 2}
+    key_of = {}
+    mp = BUILD / "중복매핑.csv"
+    if mp.exists():
+        for r in csv.DictReader(open(mp, encoding="utf-8-sig")):
+            key_of[(r["사이트"], r["공고URL"])] = r["통합키"]
+    best = {}
+    for r in busan:
+        k = key_of.get((r["사이트"], r["공고URL"]))
+        if not k:
+            continue
+        cur = best.get(k)
+        if cur is None or RANK.get(r["부산판정확실도"], 9) < RANK.get(cur[1], 9):
+            best[k] = (r["부산판정근거"], r["부산판정확실도"])
+
     m = BUILD / "공고_통합.csv"
     if m.exists():
         mrows = list(csv.DictReader(open(m, encoding="utf-8-sig")))
-        mcols = list(mrows[0].keys()) if mrows else []
-        mb = [r for r in mrows
-              if r.get("시도") == "부산"
-              or (r.get("시군구") in BUSAN_SGG and not r.get("시도"))
-              or "부산일자리정보망" in (r.get("게재사이트") or "")]
+        mcols = (list(mrows[0].keys()) if mrows else []) + ["부산판정근거", "부산판정확실도"]
+        mb = []
+        for r in mrows:
+            hit = best.get(r.get("통합키"))
+            if not hit:
+                continue
+            r = dict(r); r["부산판정근거"], r["부산판정확실도"] = hit
+            mb.append(r)
         dump(OUT / "부산_공고_통합.csv", mcols, mb)
+        c = Counter(r["부산판정확실도"] for r in mb)
+        print("  통합본 확실도  " + " / ".join(f"{k} {c[k]:,}" for k in ("강", "중", "약") if c[k]))
 
     # 직무 상위
     duty = Counter()

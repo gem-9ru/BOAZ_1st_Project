@@ -231,11 +231,25 @@ def main():
             n1 += 1
     print(f"  1단계 확정 매칭      {n1:,}쌍")
 
-    # ---- 2단계: 회사키 + 제목키 + 시도 완전일치 ---------------------------
-    # [수정] 키에 시도를 넣었더니, 같은 사이트의 같은 공고인데 한쪽만 지역이 파싱된 경우
-    #   (예: 슈퍼카파츠코리아 동일 제목이 시도='부산' / 시도=''로 갈림) 병합되지 않았다.
-    #   회사+제목이 같으면 지역 표기 유무와 무관하게 같은 공고로 본다.
-    #   단 지역이 **둘 다 있으면서 서로 다른 경우**만 별개로 유지한다.
+    # ---- 2단계: 회사키 + 제목키 완전일치 ------------------------------------
+    # [수정 1] 키에 시도를 넣었더니, 같은 공고인데 한쪽만 지역이 파싱된 경우
+    #   (시도='부산' / 시도='') 병합되지 않았다.
+    # [수정 2] 그래서 시도를 키에서 빼고 "base 와 시도가 다르면 건너뛴다" 로 바꿨는데
+    #   base 가 그룹의 첫 행이라 **결과가 입력 순서에 좌우됐다.**
+    #   ㈜아정네트웍스 "보안 인증 담당자 (부산)" 6행이 서울 2 / 부산 4 로 갈렸는데
+    #   base 가 서울 행이라 부산 4행이 전부 단독으로 떨어졌다.
+    # → 지역별로 분할해 각 덩어리 안에서 병합한다(입력 순서와 무관).
+    #
+    # [지역 판정] 제목에 지역명이 있으면 그걸 쓴다.
+    #   위 사례는 제목이 "(부산)" 이라고 못박는데 시도는 본사 주소(서울)가 잡힌 것이다.
+    #   공고 제목은 고용주가 직접 밝힌 근무지라 파싱된 시도보다 믿을 만하다.
+    SIDO_IN_TITLE = re.compile(
+        r"(?:^|[\s\[(/·,])(" + "|".join(SIDO_WORDS[:17]) + r")(?:[\s\])/·,]|$)")
+
+    def region_of(r):
+        m = SIDO_IN_TITLE.search(r["공고제목"])
+        return m.group(1) if m else (r["시도"] or "")
+
     g = defaultdict(list)
     for r in rows:
         tk = title_key(r["공고제목"])
@@ -244,14 +258,33 @@ def main():
             g[(r["회사키"], tk)].append(r["_i"])
     n2 = 0
     for k, idxs in g.items():
-        base = idxs[0]
-        for j in idxs[1:]:
-            if uf.find(base) == uf.find(j):
-                continue
-            sa, sb = rows[base]["시도"], rows[j]["시도"]
-            if sa and sb and sa != sb:
-                continue                      # 지역이 명시적으로 다르면 별개 공고
-            link(base, j, "2단계:완전일치"); n2 += 1
+        # [사이트가 하나씩만 올렸으면 같은 공고다]
+        #   회사·제목이 같은데 사이트마다 지역이 다르게 적힌 경우가 있다.
+        #     TKG태광 "2026 부문별 채용 공고" → 부산잡 대구 / 사람인 부산 / 캐치 경남
+        #   전국 공채를 사이트마다 대표 지역 하나만 기록한 것이지 별개 공고가 아니다.
+        #   반대로 **한 사이트가 같은 제목을 여러 번** 올렸다면 그건 실제로
+        #   권역·근무지가 다른 별개 모집이므로 지역별로 나눈다.
+        per_site = defaultdict(int)
+        for i in idxs:
+            per_site[rows[i]["사이트"]] += 1
+        if idxs and max(per_site.values()) == 1:
+            parts = {"": idxs}
+        else:
+            parts = defaultdict(list)
+            for i in idxs:
+                parts[region_of(rows[i])].append(i)
+            blanks = parts.pop("", [])
+            if parts:
+                biggest = max(parts, key=lambda s: len(parts[s]))
+                parts[biggest] += blanks
+            elif blanks:
+                parts[""] = blanks
+        for members in parts.values():
+            base = members[0]
+            for j in members[1:]:
+                if uf.find(base) == uf.find(j):
+                    continue
+                link(base, j, "2단계:완전일치"); n2 += 1
     print(f"  2단계 완전일치       {n2:,}쌍")
 
     # ---- 3단계: 같은 회사 안에서 제목 유사도 ------------------------------
@@ -322,6 +355,14 @@ def main():
         pick = lambda f: next((r[f] for r in
                                sorted(group, key=lambda x: (SITE_RANK.get(x["사이트"], 99), -richness(x)))
                                if r.get(f)), "")
+        detail_vals = {c: pick(c) for c in DETAIL}
+        # 채용인원과 채용인원구분은 짝이다. 필드마다 따로 고르면
+        # "채용인원은 있는데 구분은 '없음'" 같은 모순이 생긴다(19,535 vs 15,353).
+        # 숫자를 고른 뒤 구분을 거기서 다시 만든다.
+        hc = detail_vals.get("채용인원", "")
+        detail_vals["채용인원구분"] = ("명시" if hc else
+                                  ("미정" if any(r.get("채용인원구분") == "미정" for r in group)
+                                   else "없음"))
         master.append({
             "통합키": key, "회사명": rep["회사명"], "공고제목": rep["공고제목"],
             "직무": pick("직무"), "경력구분": pick("경력구분"), "최소연차": pick("최소연차"),
@@ -330,7 +371,7 @@ def main():
             # 같은 공고를 여러 사이트에서 받았으면 값이 있는 쪽을 고른다.
             # 사이트마다 채워지는 필드가 달라서(사람인 담당업무 91%, 잡코리아 근무시간 등)
             # 병합이 오히려 결손을 메운다.
-            **{c: pick(c) for c in DETAIL},
+            **detail_vals,
             "게재사이트수": len(sites), "게재사이트": ", ".join(sites),
             "대표URL": rep["공고URL"], "전체URL": " | ".join(r["공고URL"] for r in group),
             "수집시각": rep["수집시각"],
