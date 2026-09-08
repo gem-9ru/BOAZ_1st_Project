@@ -1,0 +1,22 @@
+# 체크포인트·실행 로그 — 재수집 시 자동 생성 (88MB)
+logs/
+
+# 파이프라인 산출물 — data/ 에서 한 번에 재생성됩니다 (150MB)
+#   python3 src/pipeline/normalize.py && python3 src/pipeline/dedup.py
+build/*.csv
+
+# 파이썬
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# 잡플래닛 — "무단 전재·무단 수집·재배포 및 AI 학습 이용 금지" 고지가 있어
+# 공개 저장소에 포함하지 않습니다. 수집 코드(src/jobplanet.py)와
+# 대체 처리 코드(src/pipeline/reconcile_jobplanet.py)는 남겨둡니다.
+# → docs/03_정책감사.md, docs/06_알려진_한계.md
+data/잡플래닛.csv
+제외됨/잡플래닛_잡코리아중복.csv
