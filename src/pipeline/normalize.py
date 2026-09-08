@@ -370,11 +370,20 @@ def enrich_duty(duty, title, site="", company="", detail=None):
         trusted += _clean_tokens(SPLIT_RE.split(v), company)
 
     # 3 — 모집분야. 자리 이름이라 통째로도 쓸 만하지만 안내문이 섞이므로 사전으로 거른다.
+    #
+    # [꼬리말을 떼고 쓴다] 사이트가 모집분야에 공고제목을 그대로 넣는 경우가 많다.
+    #   "그래픽 디자이너 모집합니다", "BNCT 터미널 지게차 기사 모집"
+    #   그대로 토큰으로 쓰면 직무 칸에 문장이 박힌다(2,164행에서 발생).
+    #   → 앞의 대괄호 머리말과 뒤의 모집/채용 꼬리말을 떼고 남은 자리 이름만 쓴다.
     field = (detail.get("직무상세") or "").strip()
     from_field = []
     if field and not BOILERPLATE.search(field):
-        if len(field) <= 60 and not re.search(r"[.。]\s", field):
-            from_field = _clean_tokens(SPLIT_RE.split(field), company)
+        core = re.sub(r"^\s*[\[(【][^\])】]{1,30}[\])】]\s*", "", field)
+        core = re.sub(r"\s*(?:직원|사원|팀원)?\s*"
+                      r"(?:모집합니다|모집중|모집|채용\s*공고|채용합니다|채용|"
+                      r"구합니다|구인합니다|구인|모십니다|공고)\s*$", "", core).strip(" ,·-–—")
+        if 1 < len(core) <= 40 and not re.search(r"[.。]\s", core):
+            from_field = _clean_tokens(SPLIT_RE.split(core), company)
         from_field += duty_candidates(field[:200], company)
 
     # 4 — 원본 직무 칸
