@@ -21,6 +21,16 @@
 [2단계 수집]
   1) 잡코리아 Ext 페이지에서 iframe 의 wantedAuthNo 를 뽑는다
   2) work24 상세를 받아 직무내용·직종·학력·경력·임금을 파싱한다
+
+[실패 1,577건은 마감분이다]
+4,214건 중 2,637건만 본문이 왔다. 나머지는 1.2KB 자동제출 폼만 돌아오는데
+그 안에 이유가 적혀 있다.
+
+    var msgStr = '마감된 채용정보입니다.';
+
+워크넷 원본은 내려갔는데 잡코리아에는 아직 남아 있는 공고다.
+차단이나 파싱 실패가 아니라 재시도해도 소용없다.
+※ 응답이 200 이고 HTML 도 정상이라 조용히 실패한다. 본문에서 문구로 구분한다.
 """
 import csv, json, re, sys
 from bs4 import BeautifulSoup
@@ -39,7 +49,12 @@ AUTH = re.compile(r"wantedAuthNo=([A-Za-z0-9]+)")
 
 
 def parse(url, resp):
-    """work24 상세. url 에 원래 잡코리아 URL 을 되돌려 넣기 위해 MAP 을 쓴다."""
+    """work24 상세. url 에 원래 잡코리아 URL 을 되돌려 넣기 위해 MAP 을 쓴다.
+
+    마감된 공고는 '마감된 채용정보입니다' 스크립트만 담긴 폼이 200 으로 온다.
+    """
+    if "마감된 채용정보" in resp.text:
+        return None
     s = BeautifulSoup(resp.text, "html.parser")
     for t in s(["script", "style"]):
         t.decompose()
@@ -76,7 +91,8 @@ def main():
     def grab(u, resp):
         m = AUTH.search(resp.text)
         return {"공고URL": u, "authNo": m.group(1)} if m else None
-    fetch_many_ckpt(s1, jk, grab, workers=4, per_sec=3.0, label="authNo")
+    # 잡코리아는 워커를 늘려도 3req/s 부근이 천장이다(4/8/12워커 실측).
+    fetch_many_ckpt(s1, jk, grab, workers=6, per_sec=3.5, label="authNo")
 
     pairs = [(r["공고URL"], r["authNo"]) for r in s1.rows if r.get("authNo")]
     print(f"  인증번호 확보 {len(pairs):,}건 — 2단계: 고용24 상세", file=sys.stderr)
@@ -89,7 +105,9 @@ def main():
 
     s2 = Site("고용24_상세", ROOT, delay=0)
     s2.note("robots 가 /wk/ 를 허용한다(구 도메인 work.go.kr 은 /empInfo/ 전면 차단이라 미사용)")
-    fetch_many_ckpt(s2, urls, parse, workers=3, per_sec=2.0, label="고용24")
+    # 고용24는 동시성이 잘 늘어난다. 실측: 3워커 1.97 / 6워커 5.68 / 10워커 8.70 req/s (실패 0).
+    # 공공 사이트라 천장까지 밀지 않고 8워커 7req/s 로 둔다.
+    fetch_many_ckpt(s2, urls, parse, workers=8, per_sec=7.0, label="고용24")
 
     with OUT.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore")

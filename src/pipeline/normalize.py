@@ -351,11 +351,23 @@ def enrich_duty(duty, title, site="", company="", detail=None):
         duty = ""
 
     # 1·2 — 사이트가 분류한 값. 어휘 사전을 거치지 않고 그대로 앞에 둔다.
+    #
+    # [직종은 쪼개면 안 된다] 고용24의 직종은 한국고용직업분류(KECO) 명칭이고
+    #   괄호 안에 예시가 쉼표로 나열된다.
+    #     "건물 청소원(공공건물,아파트,사무실,병원,상가,공장 등)"
+    #   쉼표로 split 하면 '아파트' '병원' '공장 등' 같은 쓰레기 토큰이 생긴다.
+    #   → 괄호 설명이 길거나 쉼표를 품고 있으면 떼어내고, 남은 이름을 통째로 한 토큰으로 쓴다.
+    #   원본 KECO 명칭은 `직종` 컬럼에 그대로 남으므로 분류에는 지장이 없다.
     trusted = []
-    for key in ("직종", "직무키워드"):
-        v = (detail.get(key) or "").strip()
-        if v and not BOILERPLATE.search(v) and len(v) <= 200:
-            trusted += _clean_tokens(SPLIT_RE.split(v), company)
+    jong = (detail.get("직종") or "").strip()
+    if jong and not BOILERPLATE.search(jong) and len(jong) <= 200:
+        m = re.match(r"^(.{2,40}?)\s*\((.*)\)\s*$", jong)
+        if m and ("," in m.group(2) or len(m.group(2)) > 12):
+            jong = m.group(1).strip()
+        trusted += _clean_tokens([jong], company)
+    v = (detail.get("직무키워드") or "").strip()
+    if v and not BOILERPLATE.search(v) and len(v) <= 200:
+        trusted += _clean_tokens(SPLIT_RE.split(v), company)
 
     # 3 — 모집분야. 자리 이름이라 통째로도 쓸 만하지만 안내문이 섞이므로 사전으로 거른다.
     field = (detail.get("직무상세") or "").strip()
