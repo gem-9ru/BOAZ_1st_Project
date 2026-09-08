@@ -17,6 +17,9 @@
           dl.Job dd                    **직무** ("기물세척 및 관리")
           dl.date dd                   모집기간 "2026-09-08 00시 ~ 2026-09-25 00시"
           a onclick="show('2485','CP')" 공고 ID + 유형코드
+          → 상세 URL 은 `?pgMode=show&rcrtSeq={id}` 다. show() 가 move_form 의
+            `rcrtSeq` 에 값을 넣어 GET 한다. `idx=` 로 조립하면 내용 없는 페이지가 온다
+            (118건 전량이 그 상태였고 상세도 못 받았다).
 """
 import re, sys
 from bs4 import BeautifulSoup
@@ -67,7 +70,7 @@ def main():
                   경력="", 고용형태="",
                   지역=("부산 " + get("dl.location dd")).strip(),
                   기술스택="", 마감일=deadline,
-                  공고URL=f"{ROOT}/view.do?no=122&pgMode=show&idx={jid}&type={typ}",
+                  공고URL=f"{ROOT}/view.do?no=122&pgMode=show&rcrtSeq={jid}",
                   외부원본ID=f"busanjob4u:{jid}",
                   구분=get(".panel_tag .tag_title"),
                   기관유형=get(".panel_type .type_title"),

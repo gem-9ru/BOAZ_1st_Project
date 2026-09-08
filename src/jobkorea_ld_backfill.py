@@ -25,7 +25,7 @@ import csv, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import Site, parse_jobposting_ld, fetch_many, DATA   # noqa: E402
+from common import Site, parse_jobposting_ld, fetch_many_ckpt, ckpt_load, DATA  # noqa: E402
 
 csv.field_size_limit(10 ** 9)
 BASE = Path(__file__).resolve().parent.parent
@@ -56,7 +56,6 @@ def main():
     urls = targets()
     print(f"대상 {len(urls):,}건 (부산 최종에서 학력·급여·상세주소가 빈 공고)")
     site = Site("잡코리아LD", "https://www.jobkorea.co.kr", delay=0.5)
-    rows = []
 
     def parse(u, r):
         d = parse_jobposting_ld(u, r)
@@ -67,9 +66,10 @@ def main():
         # 하나라도 얻은 게 있어야 저장한다
         return rec if any(rec[c] for c in COLS if c not in ("공고URL", "수집시각")) else None
 
-    for rec in fetch_many(site, urls, parse, workers=2, per_sec=2.0, label="LD보강"):
-        if rec:
-            rows.append(rec)
+    # 체크포인트를 쓴다. 749건을 받아 놓고 저장에서 터져 전부 날린 적이 있다
+    # (fetch_many 는 stat 을 돌려주고 결과는 site.rows 에 쌓는데, 반환값을 순회했다).
+    fetch_many_ckpt(site, urls, parse, workers=2, per_sec=2.0, label="LD보강")
+    rows = [r for r in site.rows if isinstance(r, dict)]
     with OUT.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore")
         w.writeheader(); w.writerows(rows)
