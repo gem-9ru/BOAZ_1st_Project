@@ -376,8 +376,13 @@ class Classifier:
         # 6자리를 주는 항목이 우선. 없으면 13분류만 주는 항목을 쓴다.
         # 사전에 있으나 둘 다 빈 항목(직급·범용어)을 만나면 그 자리에서 멈춘다 —
         # "이 토큰으로는 추정하지 않는다" 가 명시된 판단이기 때문이다.
+        #
+        # [긴 토큰 먼저] `데이터엔지니어` 와 `엔지니어` 가 둘 다 사전에 있으면 긴 쪽이
+        # 이겨야 한다. 짧은 쪽이 "추정하지 않는다" 라서, 순서를 안 정하면 `엔지니어` 가
+        # 먼저 걸려 데이터 엔지니어 공고가 통째로 미분류로 남는다(실제로 그랬다).
+        toks = sorted(toks, key=lambda t: (-len(t), toks.index(t)))
         fallback = None
-        for t in toks:                          # 앞쪽 토큰이 더 신뢰도 높은 출처다
+        for t in toks:
             hit = self.lex.get(t)
             if hit is None:
                 continue
