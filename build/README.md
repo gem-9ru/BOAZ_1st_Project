@@ -3,9 +3,9 @@
 `data/` 만 있으면 아래 세 명령으로 전부 재생성됩니다.
 
 ```bash
-python3 src/pipeline/normalize.py      # -> 공고_정규화.csv   227,215행  82MB
-python3 src/pipeline/dedup.py          # -> 공고_통합.csv     161,355건  65MB
-                                       # -> 중복매핑.csv      227,215행  42MB
+python3 src/pipeline/normalize.py      # -> 공고_정규화.csv   227,214행  82MB
+python3 src/pipeline/dedup.py          # -> 공고_통합.csv     161,351건  65MB
+                                       # -> 중복매핑.csv      227,214행  42MB
                                        # -> 검수후보.csv      (0행)
 python3 src/pipeline/extract_busan.py  # -> ../부산/
 ```
