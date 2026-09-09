@@ -121,11 +121,11 @@ class Recommender:
         score = collections.defaultdict(float)
         why = {}
 
-        def bump(code, pts, tag, frag):
+        def bump(code, pts, tag, frag, rule):
             score[code] += pts
-            # 근거는 가장 강한 것 하나만 남긴다
+            # 근거는 가장 강한 것 하나만 남긴다. rule 은 어느 규칙이 걸렸는지다.
             if code not in why or why[code][0] < pts:
-                why[code] = (pts, tag, frag)
+                why[code] = (pts, tag, frag, rule)
 
         # 제목이 담당업무보다 직무를 직접 말한다. 출처별 가중치.
         # 직무 태그는 사이트가 분류한 값이라 가장 직접적이다.
@@ -144,23 +144,23 @@ class Recommender:
                 if nm in txt:
                     pts = w * (2.0 + 0.25 * len(nm))
                     for c in codes:
-                        bump(c, pts / len(codes) ** 0.5, tag, nm)
+                        bump(c, pts / len(codes) ** 0.5, tag, nm, "name")
             # ①' 한정어 포함 — 분야만 맞는 것이라 1/4 무게
             for nm, codes in self.quals:
                 if nm in txt and len(codes) <= 30:
                     pts = w * (0.5 + 0.06 * len(nm))
                     for c in codes:
-                        bump(c, pts / len(codes) ** 0.6, tag, nm)
+                        bump(c, pts / len(codes) ** 0.6, tag, nm, "qual")
             # ③ 사전 토큰
             for t, c in self.lextok.items():
                 if t in txt:
-                    bump(c, w * (0.8 + 0.3 * len(t)), tag, t)
+                    bump(c, w * (0.8 + 0.3 * len(t)), tag, t, "lex")
             # ④ 머리말 결합 — 약한 가점. 분야가 안 맞을 수 있어 단독으로는 못 쓴다
             for h, codes in self.heads.items():
                 if h in txt:
                     pts = w * (0.6 + 0.1 * len(h)) / len(codes) ** 0.6
                     for c in codes:
-                        bump(c, pts, tag, h)
+                        bump(c, pts, tag, h, "head")
         # ⑤ 아무것도 안 걸렸으면 글자 겹침으로라도 출발점을 준다.
         if not score:
             txt = " ".join(t for _, t in fields if _ != "업종")
@@ -173,7 +173,7 @@ class Recommender:
                         sims.append((inter / (len(b) + 2), c))
                 sims.sort(reverse=True)
                 for sim, c in sims[:k]:
-                    bump(c, round(sim, 3), "글자겹침", "명칭과 겹치는 글자")
+                    bump(c, round(sim, 3), "글자겹침", "명칭과 겹치는 글자", "ngram")
         # 업종은 이미 뽑힌 후보의 순위만 흔든다. 업종 어휘가 명칭에 들어 있으면 가점.
         if ind:
             for c in list(score):
@@ -181,7 +181,7 @@ class Recommender:
                 if any(w2 in cr for w2 in re.findall(r"[가-힣]{2,}", ind)):
                     score[c] += 0.4
         best = sorted(score.items(), key=lambda x: (-x[1], x[0]))[:k]
-        return [(c, round(s, 2), why[c][1], why[c][2]) for c, s in best]
+        return [(c, round(s, 2), why[c][1], why[c][2], why[c][3]) for c, s in best]
 
 
 def evaluate():
@@ -202,7 +202,7 @@ def evaluate():
         if not cand:
             hit["후보없음"] += 1
             continue
-        codes = [c for c, _, _, _ in cand]
+        codes = [c for c, *_ in cand]
         for lab, n in (("top1", 1), ("top4", 4)):
             sub = codes[:n]
             hit[lab + "_세세"] += any(c == truth for c in sub)

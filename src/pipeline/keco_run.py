@@ -11,6 +11,7 @@ from pipeline.keco_v2 import Master, Classifier, tokens, norm, core_of, STOP  # 
 from pipeline import keco_manual                                            # noqa
 from pipeline import keco_lexicon                                           # noqa
 from pipeline import keco13                                                 # noqa
+from pipeline import keco_recommend                                         # noqa
 
 csv.field_size_limit(10 ** 9)
 BASE = Path(__file__).resolve().parents[2]
@@ -219,6 +220,23 @@ def cmd_build():
     if mtok or mjob:
         print(f"수동분류 사전 — 토큰 {len(mtok):,}개 · 공고 {len(mjob):,}개")
 
+    # 추천 1순위 자동 부여 — 규칙과 출처를 둘 다 본다.
+    #   정답 2,559건으로 규칙 × 출처별 1순위 정확도를 실측했다.
+    #     규칙   출처      건수   세세   세분류  대분류
+    #     name  직무태그   772  52.2%  84.7%  95.3%   ← 쓴다
+    #     lex   직무태그   625  48.2%  64.2%  89.1%   ← 쓴다
+    #     head  직무태그    78  12.8%  19.2%  70.5%     안 쓴다
+    #     ngram  -        620  15.2%  25.2%  57.7%     안 쓴다
+    #     qual  직무태그   115   9.6%   9.6%  40.0%     안 쓴다
+    #   버리는 것들이 무엇을 만들었나
+    #     qual  "재능선생님 모집" -> «아파트» 가 걸려 경리 사무원(아파트·빌딩)
+    #     head  "통학차량안전도우미" -> «도우미» 만 걸려 응원단원
+    #     head  "iOS Developer" -> «개발자» 만 걸려 금융 및 보험 상품 개발자
+    #     ngram "클라우드 엔지니어" -> 모니터 요원
+    #   붙이면 미분류는 줄지만 데이터가 상한다.
+    rc = keco_recommend.Recommender(m)
+    REC_OK = {"name", "lex"}
+
     why_c, grade_c, lvl_c = collections.Counter(), collections.Counter(), collections.Counter()
     out = []
     for r in rows:
@@ -237,6 +255,18 @@ def cmd_build():
                         break
             if code:
                 grade = "강" if len(code) == 6 else "중"
+        if not code:
+            top = rc.top(r, k=1)
+            if top and top[0][2] == "직무태그" and top[0][4] in REC_OK:
+                acc = ("대분류 95.3% · 세분류 84.7%" if top[0][4] == "name"
+                       else "대분류 89.1% · 세분류 64.2%")
+                code, why, grade = top[0][0], "추천1순위", "약"
+                tok, cand = f"직무태그 「{top[0][3]}」", []
+                est = est or code
+                ebasis = (f"추천 1순위 — 직무 태그에 「{top[0][3]}」 가 있어 "
+                          f"{code} {m.name[code]} 로 봤다"
+                          f"({'공식 명칭 일치' if top[0][4] == 'name' else '직무사전 일치'} · "
+                          f"이 경로 실측 {acc})")
         rec = dict(r)
         if code:
             rec.update(m.levels(code))
@@ -286,7 +316,7 @@ def cmd_build():
     print("\n── 근거 ──")
     tot = 0
     for k in ["고용24직접", "별칭일치", "학습사전", "본문명칭", "상위합의",
-              "수동분류(공고)", "수동분류(토큰)", "미분류"]:
+              "추천1순위", "수동분류(공고)", "수동분류(토큰)", "미분류"]:
         print(f"  {k:<8} {why_c[k]:>6,}  {100*why_c[k]/n:5.1f}%"); tot += why_c[k]
     print(f"  {'합계':<8} {tot:>6,}  → {'전체포괄 OK' if tot == n else '누락!'}")
     print("\n── 확실도 ──")
