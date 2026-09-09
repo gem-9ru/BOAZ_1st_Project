@@ -34,11 +34,13 @@ SRC = BASE / "부산" / "부산_공고_직종분류.csv"
 OUTDIR = BASE / "분석"
 OUT = OUTDIR / "부산_공고_분석용.csv"
 PIVOT = OUTDIR / "직종대분류_지표.csv"
+PIVOT13 = OUTDIR / "직종13분류_지표.csv"
 CROSS = OUTDIR / "시군구_직종대분류.csv"
 
 COLS = ["공고ID", "회사명", "공고제목",
-        "직종대분류", "직종중분류코드", "직종코드", "직종명", "직종신뢰도",
-        "직종추정코드", "직종추정명",
+        "직종분류코드", "직종분류명", "직종대분류",
+        "직종중분류코드", "직종코드", "직종명", "직종신뢰도",
+        "직종추정코드", "직종추정명", "직종추정근거", "직종미분류사유",
         "업종원문", "시군구",
         "고용형태", "고용형태복수", "요구학력", "경력요건", "최소연차",
         "급여형태", "연봉환산최소", "연봉환산최대",
@@ -174,6 +176,10 @@ def main():
 
         out.append({
             "공고ID": r["통합키"], "회사명": r["회사명"], "공고제목": r["공고제목"],
+            # 팀이 쓰는 13대분류 — 학과↔직종 미스매치의 기준축
+            "직종분류코드": r.get("직종분류코드", ""),
+            "직종분류명": r.get("직종분류명", "") or "미분류",
+            # KECO 10대분류 — 6자리 코드에서 바로 나오는 계층
             "직종대분류": r["직종대분류명"] or "미분류",
             "직종중분류코드": r["직종중분류코드"],
             "직종코드": r["직종코드"], "직종명": r["직종명"],
@@ -182,6 +188,8 @@ def main():
             # 집계에 쓰면 안 된다 — 눈으로 훑을 때만 쓴다.
             "직종추정코드": r.get("직종추정코드", ""),
             "직종추정명": r.get("직종추정명", ""),
+            "직종추정근거": r.get("직종추정근거", ""),
+            "직종미분류사유": r.get("직종미분류사유", ""),
             "업종원문": clean_industry(r["업종"]),
             "시군구": fold_sgg(r["시군구"]),
             "고용형태": emp, "고용형태복수": emp_multi,
@@ -206,6 +214,7 @@ def main():
         for v, m in k.most_common():
             print(f"     {m:>6,}  {100*m/n:5.1f}%  {v}")
     make_pivot(out)
+    make_pivot(out, key="직종분류명", path=PIVOT13, label="직종13분류")
     make_cross(out)
     ann = [int(x["연봉환산최소"]) for x in out if x["연봉환산최소"]]
     ann.sort()
@@ -220,18 +229,19 @@ def _med(v):
     return v[len(v) // 2] if v else ""
 
 
-def make_pivot(out):
-    """직종대분류별 핵심 지표. 대시보드의 기준 표다.
+def make_pivot(out, key="직종대분류", path=None, label="직종대분류"):
+    """직종별 핵심 지표. 대시보드의 기준 표다.
 
     [비율의 분모에 주의]
     `대졸이상요구` 는 학력을 **밝힌 공고** 기준이다. 전체를 분모로 쓰면
     미기재 28% 가 '대졸을 안 요구한다' 로 잘못 세어진다.
     분모 건수를 `학력명시` 컬럼으로 함께 실어 검산할 수 있게 했다.
     """
+    path = path or PIVOT
     g = collections.defaultdict(list)
     for r in out:
-        g[r["직종대분류"]].append(r)
-    tot = sum(1 for r in out if r["직종대분류"] != "미분류")
+        g[r[key]].append(r)
+    tot = sum(1 for r in out if r[key] != "미분류")
     rows = []
     for k, v in g.items():
         edu = [r for r in v if r["요구학력"] != "미기재"]
@@ -243,7 +253,7 @@ def make_pivot(out):
         pay = [int(r["연봉환산최소"]) for r in v if r["연봉환산최소"]]
         hc = [int(r["채용인원"]) for r in v if (r["채용인원"] or "").isdigit()]
         rows.append({
-            "직종대분류": k, "공고수": len(v),
+            label: k, "공고수": len(v),
             "비중": "" if k == "미분류" else f"{100*len(v)/tot:.1f}%",
             "채용인원합": sum(hc),
             "학력명시": len(edu),
@@ -255,15 +265,15 @@ def make_pivot(out):
             "연봉명시율": f"{100*len(pay)/len(v):.1f}%",
             "연봉중앙값": _med(pay),
         })
-    rows.sort(key=lambda r: (r["직종대분류"] == "미분류", -r["공고수"]))
-    with PIVOT.open("w", newline="", encoding="utf-8-sig") as f:
+    rows.sort(key=lambda r: (r[label] == "미분류", -r["공고수"]))
+    with path.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
-    print(f"\n{PIVOT.relative_to(BASE)}  {len(rows)}행")
-    print(f"  {'직종대분류':<32}{'공고수':>7}{'비중':>7}{'대졸요구':>9}{'신입가능':>9}"
+    print(f"\n{path.relative_to(BASE)}  {len(rows)}행")
+    print(f"  {label:<32}{'공고수':>7}{'비중':>7}{'대졸요구':>9}{'신입가능':>9}"
           f"{'정규직':>8}{'연봉중앙':>9}{'연봉명시':>9}")
     for r in rows:
-        print(f"  {r['직종대분류'][:30]:<32}{r['공고수']:>7,}{r['비중']:>7}"
+        print(f"  {r[label][:30]:<32}{r['공고수']:>7,}{r['비중']:>7}"
               f"{r['대졸이상요구율']:>9}{r['신입가능율']:>9}{r['정규직율']:>8}"
               f"{str(r['연봉중앙값']):>9}{r['연봉명시율']:>9}")
 

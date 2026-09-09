@@ -326,11 +326,14 @@ class Classifier:
     GRADE = {"별칭일치": "강", "학습사전": "중"}
     ORDER = ["별칭일치", "학습사전"]
 
-    def __init__(self, master=None, learned=None, learned_prefix=None):
+    def __init__(self, master=None, learned=None, learned_prefix=None, lexicon=None):
         self.m = master or Master()
         self.learned = learned or {}
         # 정답에서 배웠지만 세세분류까지는 못 정한 토큰. 표결보다 먼저 쓴다.
         self.learned_prefix = learned_prefix or {}
+        # 직무 사전 — `약` 등급의 추정 근거. {토큰: (6자리, 13분류, 근거문장)}
+        # 둘 다 빈 행은 "이 토큰으로는 추정하지 않는다" 는 뜻이다(직급·범용어).
+        self.lex = lexicon or {}
 
     def propose(self, toks):
         """(확정후보, 표결후보). 확정후보는 (순위, 토큰위치, 코드, 근거, 토큰)."""
@@ -360,20 +363,58 @@ class Classifier:
         strong.sort()
         return strong, weak
 
-    @staticmethod
-    def _best(weak, major):
-        """표결로 이긴 대분류 안에서 가중치가 가장 큰 세세분류 1개.
+    def _estimate(self, toks):
+        """(추정 6자리, 추정 13분류, 근거) — **직무 사전**으로만 추정한다.
 
-        `직종코드` 에는 절대 넣지 않는다. 홀드아웃 실측이 **세세분류 7.0%**
-        (중분류 42.0% · 소분류 26.2% · 세분류 19.9%) 라서, 참고용 컬럼
-        `직종추정코드` 로만 싣는다. 100건 중 93건이 틀리는 값이다.
+        처음엔 "표결에서 가중치가 가장 큰 후보"를 추정값으로 썼다. 숫자는 나오지만
+        왜 그 코드인지 설명할 수 없고, 홀드아웃 정확도도 7% 였다.
+        사전 방식은 근거가 한 줄로 나온다.
+            토큰 "원무과" -> 026502  근거: 사전(수동) 원무과: 병원행정 사무원(원무)
+        사전에 없으면 추정하지 않는다. 근거 없는 값은 싣지 않는다.
+        사전의 코드가 빈 행(`실장`·`팀장`·`엔지니어`)은 "직급·범용어라 특정 불가" 다.
         """
-        w = collections.defaultdict(float)
+        # 6자리를 주는 항목이 우선. 없으면 13분류만 주는 항목을 쓴다.
+        # 사전에 있으나 둘 다 빈 항목(직급·범용어)을 만나면 그 자리에서 멈춘다 —
+        # "이 토큰으로는 추정하지 않는다" 가 명시된 판단이기 때문이다.
+        fallback = None
+        for t in toks:                          # 앞쪽 토큰이 더 신뢰도 높은 출처다
+            hit = self.lex.get(t)
+            if hit is None:
+                continue
+            code, c13, why = hit
+            if code:
+                return code, c13, why
+            if not c13:
+                return "", "", why              # 추정 안 함 — 이유는 남긴다
+            if fallback is None:
+                fallback = ("", c13, why)
+        return fallback or ("", "", "")
+
+    @staticmethod
+    def _vote13(weak, key):
+        """13대분류를 같은 표결로 정한다.
+
+        `약` 등급은 KECO 1자리만 나오는데, 그 1자리가 13분류로 갈리는 경우가 있다
+        (1→연구/정보통신, 6→영업판매/운전운송, 8→설치정비생산/재료화학/정보통신).
+        그래서 1자리에서 파생하려 하면 실패한다. 후보 코드들의 13분류를 직접
+        표결하면 그 갈림을 표가 정해 준다. 가중치 규칙은 대분류 표결과 같다.
+        """
+        score, first = collections.defaultdict(float), {}
         for pos, codes, _ in weak:
+            cnt = collections.Counter()
             for c in codes:
-                if c[:1] == major:
-                    w[c] += 1.0 / (1 + pos) / len(codes)
-        return max(w, key=lambda c: (w[c], c)) if w else ""
+                k = key(c)
+                if k:
+                    cnt[k] += 1
+            if not cnt:
+                continue
+            tot = sum(cnt.values())
+            for k, v in cnt.items():
+                score[k] += (1.0 / (1 + pos)) * v / tot
+                first.setdefault(k, pos)
+        if not score:
+            return ""
+        return max(score, key=lambda k: (score[k], -first[k]))
 
     @staticmethod
     def _vote(weak):
@@ -405,8 +446,11 @@ class Classifier:
             p for p, cs, _ in weak if any(c[:1] == k for c in cs))))
         return top, owner[top][1]
 
-    def assign(self, toks, gold_name=None, text=""):
-        """(코드, 근거, 확실도, 매칭토큰, 후보코드들, 추정코드)
+    def assign(self, toks, gold_name=None, text="", k13=None):
+        """(코드, 근거, 확실도, 매칭토큰, 후보코드들, 추정6자리, 추정13분류, 추정근거)
+
+        `k13` 은 13대분류를 6자리 코드에서 뽑는 함수다(keco13.of). 주면 `약` 등급의
+        13대분류를 후보 표결로 정한다.
 
         `text` 는 담당업무·자격요건·제목을 이어붙인 자유 텍스트다. 토큰으로
         확정하지 못했을 때만 본다 — 토큰이 더 신뢰도 높은 출처다.
@@ -414,7 +458,7 @@ class Classifier:
         if gold_name:
             c = self.m.exact.get(norm(gold_name)) or self.m.exact.get(core_of(gold_name))
             if c:
-                return c, "고용24직접", "강", gold_name, [], ""
+                return c, "고용24직접", "강", gold_name, [], "", "", ""
         strong, weak = self.propose(toks)
         cand = []
         for _, _, c, _, _ in strong:
@@ -422,7 +466,7 @@ class Classifier:
                 cand.append(c)
         if strong:
             _, _, code, why, tok = strong[0]
-            return code, why, self.GRADE[why], tok, cand[:6], ""
+            return code, why, self.GRADE[why], tok, cand[:6], "", "", ""
         # 토큰으로 세세분류를 못 정했다. 본문에 공식 명칭이 통째로 있으면 표결 후보로 넣는다.
         #
         # [왜 확정으로 안 쓰나] 처음엔 이걸 6자리 확정(중급)으로 썼더니 홀드아웃에서
@@ -436,8 +480,20 @@ class Classifier:
                 weak.append((len(toks) + 1, (hit[0],), hit[1]))
         code, tok = self._vote(weak)
         if not code:
-            return "", "", "미분류", "", cand[:6], ""
+            est, e13, ebasis = self._estimate(toks)
+            if not e13 and k13:
+                v = self._vote13(weak, k13)
+                if v:
+                    e13 = v
+                    ebasis = ebasis or f"후보 표결 — 13대분류가 {v} 로 모였다"
+            return "", "", "미분류", "", cand[:6], est, e13, ebasis
         # 표결은 **대분류(1자리)까지만** 낸다.
         # 홀드아웃 실측으로 그 아래는 못 믿는다(중분류 55.7% · 소분류 35.1% · 세분류 23.6%).
         # 24% 정확도의 세분류를 데이터에 실으면 쓰는 사람을 속이는 셈이다.
-        return code, "상위합의", "약", tok, cand[:6], self._best(weak, code)
+        est, e13, ebasis = self._estimate(toks)
+        if not e13 and k13:
+            v = self._vote13(weak, k13)
+            if v:
+                e13 = v
+                ebasis = ebasis or f"후보 표결 — 지지 후보들의 13대분류가 {v} 로 모였다"
+        return code, "상위합의", "약", tok, cand[:6], est, e13, ebasis
