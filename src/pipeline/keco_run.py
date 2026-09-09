@@ -307,6 +307,51 @@ def cmd_build():
         grade_c[grade] += 1
         lvl_c[rec["직종코드깊이"]] += 1
 
+    # ── 마지막 레이어: 업종 사전확률 ────────────────────────────────────────
+    # 안 쓴 신호를 전수 점검하다 찾았다. `강`·`중` 7,308건(전 사이트·정확도 98%)을
+    # 학습셋으로 두고 특징별 13대분류 예측력을 5-fold 로 재봤다.
+    #     업종 73.0%  ·  급여형태 53.8%  ·  게재사이트 49.4%  ·  요구학력 43.1%
+    #     시군구 37.1%  ·  고용형태 33.3%  ·  경력구분 30.8%
+    # 업종만 쓸 만하다. 다만 최빈값을 그냥 붙이면 다수 직군으로 쏠려
+    # **분포 총변동거리 10.3%p** 가 된다 — 미스매치 분석의 비율을 망친다.
+    # 순도 임계를 걸면 달라진다.
+    #     순도 60% 이상  84.0%  TVD 9.6%p
+    #     순도 70% 이상  92.6%  TVD 3.5%p
+    #     순도 80% 이상  95.0%  TVD 3.2%p   ← 이걸 쓴다
+    # `의료(진료과목별)` -> 보건·의료직 98% 처럼 직군이 사실상 확정되는 업종만 남는다.
+    # 13대분류가 아직 빈 행에만 적용한다. 6자리는 주지 않는다(순도 업종이 7종뿐).
+    IND = lambda r: r["업종"] if r["업종"] not in ("", "-") else ""
+    prior = collections.defaultdict(collections.Counter)
+    for rec in out:
+        if rec["직종코드확실도"] in ("강", "중") and rec["직종코드"]:
+            k, c = IND(rec), keco13.of(rec["직종코드"])[0]
+            if k and c:
+                prior[k][c] += 1
+    pure = {}
+    for k, c in prior.items():
+        t = sum(c.values())
+        if t < 10:
+            continue
+        v, n2 = c.most_common(1)[0]
+        if n2 / t >= 0.8:
+            pure[k] = (v, n2 / t, t)
+    n_ind = 0
+    for rec in out:
+        if rec["직종분류코드"]:
+            continue
+        hit = pure.get(IND(rec))
+        if not hit:
+            continue
+        rec["직종분류코드"], rec["직종분류명"] = hit[0], keco13.NAMES[hit[0]]
+        rec["직종추정근거"] = (rec["직종추정근거"] or "") + (
+            f" / 업종 사전확률 — 업종 「{IND(rec)}」 의 강·중 공고 {hit[2]}건 중 "
+            f"{100*hit[1]:.0f}% 가 {hit[0]} {keco13.NAMES[hit[0]]} 다"
+            f" (이 경로 실측 95.0%)").strip(" /")
+        n_ind += 1
+    if n_ind:
+        print(f"업종 사전확률로 13대분류 보강 {n_ind:,}건 "
+              f"(순도 80%·10건 이상 업종 {len(pure)}종 · 실측 95.0%)")
+
     with OUT.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader(); w.writerows(out)
