@@ -224,6 +224,21 @@ class Master:
             key=lambda x: -len(x[0]))
         self._memo = {}
 
+    def scan_text(self, txt):
+        """자유 텍스트에 공식 명칭이 통째로 들어 있으면 그 코드를 준다.
+
+        분류기가 `직무` 토큰만 보던 탓에, 직무 칸은 비었는데 담당업무·자격요건에
+        `간호사면허소지` `치위생사 구인합니다` 처럼 직업명이 그대로 적힌 공고가
+        미분류로 남았다. 긴 명칭부터 찾아 가장 구체적인 것을 고른다.
+        """
+        t = norm(txt)[:400]
+        if len(t) < 3:
+            return None
+        for cr, c in self.cores:                # 이미 긴 순
+            if len(cr) >= 3 and cr in t:
+                return c, cr
+        return None
+
     def lookup_partial(self, tok):
         """토큰 하나가 내는 후보. 토큰당 1회만 계산하고 캐시한다.
 
@@ -292,6 +307,7 @@ def tokens(job_field):
             continue
         for v in (t, re.sub(r"\(.*", "", t)):      # '용접원 모집(스텐박판)' -> '용접원 모집'
             k = norm(v)
+            k = re.sub(r"\d+명$", "", k)        # "사원 1명" 처럼 모집인원이 붙어 온다
             k = re.sub(r"(모집|채용|공고|구인)$", "", k)
             if len(k) < 2 or k in STOP or k.isdigit() or k in seen:
                 continue
@@ -310,9 +326,11 @@ class Classifier:
     GRADE = {"별칭일치": "강", "학습사전": "중"}
     ORDER = ["별칭일치", "학습사전"]
 
-    def __init__(self, master=None, learned=None):
+    def __init__(self, master=None, learned=None, learned_prefix=None):
         self.m = master or Master()
         self.learned = learned or {}
+        # 정답에서 배웠지만 세세분류까지는 못 정한 토큰. 표결보다 먼저 쓴다.
+        self.learned_prefix = learned_prefix or {}
 
     def propose(self, toks):
         """(확정후보, 표결후보). 확정후보는 (순위, 토큰위치, 코드, 근거, 토큰)."""
@@ -324,6 +342,14 @@ class Classifier:
             c = self.learned.get(t)
             if c:
                 strong.append((1, i, c, "학습사전", t)); continue
+            c = self.learned_prefix.get(t)
+            if c:
+                # 상위 접두라 세세분류로는 못 쓴다. 표결 후보로 넣되
+                # 그 접두에 속한 코드 전체를 후보로 준다 — 표결이 그 방향으로 쏠린다.
+                sub = tuple(x for x in self.m.name if x.startswith(c))
+                if sub:
+                    weak.append((i, sub, t))
+                    continue
             r = self.m.lookup_partial(t)
             if not r:
                 continue
@@ -333,6 +359,21 @@ class Classifier:
             weak.append((i, (val,) if isinstance(val, str) else val, t))
         strong.sort()
         return strong, weak
+
+    @staticmethod
+    def _best(weak, major):
+        """표결로 이긴 대분류 안에서 가중치가 가장 큰 세세분류 1개.
+
+        `직종코드` 에는 절대 넣지 않는다. 홀드아웃 실측이 **세세분류 7.0%**
+        (중분류 42.0% · 소분류 26.2% · 세분류 19.9%) 라서, 참고용 컬럼
+        `직종추정코드` 로만 싣는다. 100건 중 93건이 틀리는 값이다.
+        """
+        w = collections.defaultdict(float)
+        for pos, codes, _ in weak:
+            for c in codes:
+                if c[:1] == major:
+                    w[c] += 1.0 / (1 + pos) / len(codes)
+        return max(w, key=lambda c: (w[c], c)) if w else ""
 
     @staticmethod
     def _vote(weak):
@@ -364,12 +405,16 @@ class Classifier:
             p for p, cs, _ in weak if any(c[:1] == k for c in cs))))
         return top, owner[top][1]
 
-    def assign(self, toks, gold_name=None):
-        """(코드, 근거, 확실도, 매칭토큰, 후보코드들)"""
+    def assign(self, toks, gold_name=None, text=""):
+        """(코드, 근거, 확실도, 매칭토큰, 후보코드들, 추정코드)
+
+        `text` 는 담당업무·자격요건·제목을 이어붙인 자유 텍스트다. 토큰으로
+        확정하지 못했을 때만 본다 — 토큰이 더 신뢰도 높은 출처다.
+        """
         if gold_name:
             c = self.m.exact.get(norm(gold_name)) or self.m.exact.get(core_of(gold_name))
             if c:
-                return c, "고용24직접", "강", gold_name, []
+                return c, "고용24직접", "강", gold_name, [], ""
         strong, weak = self.propose(toks)
         cand = []
         for _, _, c, _, _ in strong:
@@ -377,11 +422,22 @@ class Classifier:
                 cand.append(c)
         if strong:
             _, _, code, why, tok = strong[0]
-            return code, why, self.GRADE[why], tok, cand[:6]
+            return code, why, self.GRADE[why], tok, cand[:6], ""
+        # 토큰으로 세세분류를 못 정했다. 본문에 공식 명칭이 통째로 있으면 표결 후보로 넣는다.
+        #
+        # [왜 확정으로 안 쓰나] 처음엔 이걸 6자리 확정(중급)으로 썼더니 홀드아웃에서
+        # 세세분류 2% · 대분류 73% 가 나왔다. 자격요건의 `간호사면허소지` 가
+        # 간호조무사 공고에 걸리는 식이다. 자유 텍스트에 직업명이 나온다는 것은
+        # "그 직업이다" 가 아니라 "그 직업과 관련 있다" 는 뜻일 때가 많다.
+        # 대분류 방향 정도만 쓸 수 있으므로 표결에 넘긴다.
+        if text:
+            hit = self.m.scan_text(text)
+            if hit:
+                weak.append((len(toks) + 1, (hit[0],), hit[1]))
         code, tok = self._vote(weak)
         if not code:
-            return "", "", "미분류", "", cand[:6]
+            return "", "", "미분류", "", cand[:6], ""
         # 표결은 **대분류(1자리)까지만** 낸다.
         # 홀드아웃 실측으로 그 아래는 못 믿는다(중분류 55.7% · 소분류 35.1% · 세분류 23.6%).
         # 24% 정확도의 세분류를 데이터에 실으면 쓰는 사람을 속이는 셈이다.
-        return code, "상위합의", "약", tok, cand[:6]
+        return code, "상위합의", "약", tok, cand[:6], self._best(weak, code)
