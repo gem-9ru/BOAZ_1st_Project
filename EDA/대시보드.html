@@ -39,6 +39,9 @@ header{margin-bottom:28px}
 .kicker{font-size:12px;letter-spacing:.08em;color:var(--ink3);font-weight:600;margin-bottom:10px}
 h1{font-size:clamp(22px,3.6vw,34px);line-height:1.3;margin:0 0 14px;letter-spacing:-.02em;font-weight:700}
 h1 em{font-style:normal;color:var(--c2)}
+.lead{font-size:clamp(15px,2.1vw,19px);line-height:1.5;margin:0 0 18px;color:var(--ink);font-weight:600;
+  padding-left:14px;border-left:3px solid var(--c2)}
+.lead span{display:block;margin-top:4px;font-weight:500;color:var(--ink2);font-size:.92em}
 .q{font-size:15px;color:var(--ink2);max-width:64ch;margin:0 0 22px}
 .q b{color:var(--ink);font-weight:600}
 .hero{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:8px}
@@ -96,34 +99,35 @@ footer b{color:var(--ink2);font-weight:600}
 <div class="wrap">
 <header>
   <div class="kicker">BOAZ 27기 1차 프로젝트 · DX CHALLENGE 2026</div>
-  <h1>부산 청년은 왜 떠나는가 —<br>자리가 없어서인가, <em>갈 만한 자리</em>가 없어서인가?</h1>
+  <h1>인재 배출과 기업 수요의 <em>엇갈린 결</em></h1>
+  <p class="lead">부산 대학은 대졸을 내보내고, 부산 일자리는 대졸을 따로 찾지 않는다<br>
+  <span>— 그 대가가 월 <b>37.7만원</b>이다</span></p>
   <p class="q">부산 청년이 <b>일자리 때문에</b> 떠난다는 건 이미 알려져 있다.
   부산시가 시민 31,144명에게 물었더니 이주 이유 1위가 <b>구직·취업·직장 66.5%</b>였고,
   부산연구원도 순유출 요인 1순위로 직업을 꼽았다. <b>우리 질문은 그 다음이다.</b>
-  부산은 해마다 4년제 졸업생 <b>3만 6천명</b>을 배출하는데,
   「일자리가 부족하다」로 설명하려 하면 데이터가 받쳐주지 않는다.
-  그래서 질문을 바꿨다 — <b>자리의 개수가 아니라 자리의 성격</b>을 본다.
-  직접 수집한 부산 채용공고 <b>25,135건</b>을 요구 학력·고용 형태·업종·지역으로 갈라
-  대졸 졸업생이 실제로 지원할 수 있는 자리가 어디에 얼마나 있는지 셌다.</p>
+  그래서 <b>개수가 아니라 결</b>을 봤다 — 부산 대학이 내보내는 것과 부산 일자리가 찾는 것이
+  <b>계열에서도, 학력에서도</b> 어긋나 있다.
+  직접 수집한 부산 채용공고 <b>25,135건</b>을 요구 학력·고용 형태·업종·지역으로 갈라 셌다.</p>
 
   <div class="hero">
-    <div class="stat"><div class="n a">3.2%</div>
-      <div class="t">대졸 · 신입 · 정규직을 모두 만족하는 공고<br>25,135건 중 <b>816건</b></div></div>
     <div class="stat"><div class="n b">90.8%</div>
-      <div class="t">4년제 졸업을 요구하지 <b>않는</b> 공고<br>절반 이상(59.7%)은 학력을 아예 안 본다</div></div>
+      <div class="t">대졸을 <b>따로 찾지 않는</b> 공고<br>절반 이상(59.7%)은 학력을 아예 안 본다</div></div>
     <div class="stat"><div class="n c">37.7<span style="font-size:.5em">만원</span></div>
       <div class="t">부산에 남은 사람과 수도권으로 간 사람의<br>월소득 차이 (주거비를 빼도 93~99% 남는다)</div></div>
+    <div class="stat"><div class="n a">3.2%</div>
+      <div class="t">대졸을 찾으면서 신입·정규직인 공고<br>25,135건 중 <b>816건</b></div></div>
   </div>
 
   <div class="ins">
     <h4>이 대시보드가 찾아낸 것</h4>
-    <p><b>① 부산에 일자리가 없는 게 아니다. 대졸이 갈 자리가 없다.</b>
-      공고 수가 가장 많은 강서구(3,839건)는 정규직 비율도 84.7%로 가장 높지만,
-      대졸을 요구하는 비율은 10.3%에 그친다. 많은 자리가 대졸을 부르지 않는다.</p>
-    <p><b>② 대졸을 부르는 업종이 가장 불안정하다.</b>
-      대졸 요구 비율 1위인 교육(45.1%)은 정규직 비율이 55.7%로 최저권이다.
-      반대로 정규직 비율이 높은 제조(88.9%)·보건의료(88.2%)는 대졸 요구가 각각 12.3%·5.1%다.
-      <b>안정과 학력이 같은 자리에 있지 않다.</b></p>
+    <p><b>① 부산 일자리는 학력을 거의 묻지 않는다.</b>
+      공고의 <b>59.7%</b>가 학력을 아예 보지 않고, 대졸을 따로 찾는 공고는 <b>9.2%</b>다.
+      대졸도 지원할 수는 있다 — 다만 <b>대졸이라는 점에 값을 매기지 않는다.</b></p>
+    <p><b>② 그 대가가 임금으로 나타난다.</b>
+      전공·학점·성별·졸업연도를 맞춰 비교해도 부산에 남은 졸업생은 월 <b>37.7만원</b>을 덜 번다.
+      「부산은 집값이 싸잖나」도 실제로 재봤는데, 혼자 사는 사람끼리 주거비 차이는
+      월 <b>2.6만원</b>(월세만 보면 0.5만원)이라 <b>격차의 93~99%가 그대로 남는다.</b></p>
   </div>
 </header>
 
@@ -161,7 +165,9 @@ footer b{color:var(--ink2);font-weight:600}
     </div>
   </div>
   <p class="note"><b>꼭 같이 읽을 것</b> — 「학력 안 봄」(59.7%)은 대졸에게 <b>열려 있지만 대졸이라서 더 주지는 않는</b> 자리다.
-  그래서 「대졸이 갈 자리가 3.2%뿐」이 아니라 <b>「기업이 대졸이라는 점에 값을 매기는 자리가 3.2%」</b>라고 읽어야 한다.
+  <b>요구 학력은 대개 하한선이라 대졸이 지원할 수 있는 자리는 94%다.</b>
+  그러니 「대졸이 갈 자리가 3.2%뿐」이 아니라
+  <b>「기업이 대졸이라는 점에 값을 매기는 자리가 3.2%」</b>라고 읽어야 한다.
   출처 — 직접 수집한 부산 채용공고 25,135건(2026년 9월 7일 기준 모집 중이던 공고).</p>
 </section>
 
@@ -181,9 +187,13 @@ footer b{color:var(--ink2);font-weight:600}
 </section>
 
 <section>
-  <h2>④ 대졸을 부르는 업종이 가장 불안정하다</h2>
+  <h2>④ 대졸을 찾는 자리는 업종·지역에 몰려 있다</h2>
   <p class="sub">가로축은 그 업종이 대졸을 요구하는 비율, 세로축은 정규직 비율이다.
-  <b>오른쪽 위에 있어야 대졸이 갈 만한 자리</b>인데, 거기 놓인 업종은 IT 하나뿐이고 그마저 공고가 541건(전체의 2.2%)이다.</p>
+  <b>대졸을 뚜렷하게 찾는 업종은 교육(45.1%)과 IT(21.4%) 둘뿐</b>이고,
+  나머지 여덟 업종은 모두 12% 아래다.<br>
+  <b>⚠️ 「대졸을 부르는 곳일수록 불안정하다」고는 말하지 않는다.</b>
+  업종 10개로 두 값의 관계를 재보면 <b>관계가 확인되지 않고</b>(r=−0.23, 순위 기준 +0.08),
+  교육을 빼면 부호가 뒤집힌다(+0.30). <b>교육 한 업종이 만든 모양이다.</b></p>
   <div class="grid2">
     <div>
       <div class="thead"><div class="legend"><span><i class="sw" style="background:var(--c1);border-radius:50%"></i>업종 (원 크기 = 공고 수)</span></div>
@@ -201,6 +211,7 @@ footer b{color:var(--ink2);font-weight:600}
     </div>
   </div>
   <p class="note"><b>업종을 모르는 공고가 31.6%</b>다(그래프에서 제외). 업종 구성은 비교용이며 <b>순위는 주장하지 않는다</b>.
+  점 10개로 추세를 읽지 않는다 — 표본이 적어 튀는 값 하나가 모양을 바꾼다.
   구·군 그래프에서는 지역을 모르는 1,935건을 뺐다.
   청년 1만명당 대졸 신입 공고는 강서구 281.6 ↔ 부산진구 31.0 ↔ 서구 22.0으로,
   <b>자리가 있는 구와 청년이 사는 구가 다르다</b>.</p>
@@ -473,8 +484,8 @@ function scatter(el, pts){
   let s = '';
   // 「대졸을 부르면서 안정적인 자리」 영역 — 비어 있음을 보이기
   s += `<rect x="${X(18)}" y="${Y(95)}" width="${X(50)-X(18)}" height="${Y(80)-Y(95)}" fill="var(--c3)" fill-opacity=".07" stroke="var(--c3)" stroke-opacity=".45" stroke-width="1" stroke-dasharray="4 3" rx="6"/>`;
-  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+15}" text-anchor="end" fill="var(--c3)">대졸을 부르면서 안정적인 자리</text>`;
-  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+29}" text-anchor="end" fill="var(--c3)">— IT뿐이고, 공고는 541건(2.2%)이다</text>`;
+  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+15}" text-anchor="end" fill="var(--c3)">대졸을 뚜렷하게 찾는 업종</text>`;
+  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+29}" text-anchor="end" fill="var(--c3)">— 교육과 IT 둘뿐이다</text>`;
   for (let v=0; v<=50; v+=10){ s += `<line class="gl" x1="${X(v)}" y1="${t}" x2="${X(v)}" y2="${t+PH}"/>`
     + `<text class="ax" x="${X(v)}" y="${t+PH+16}" text-anchor="middle">${v}%</text>`; }
   for (let v=40; v<=90; v+=10){ s += `<line class="gl" x1="${l}" y1="${Y(v)}" x2="${l+PW}" y2="${Y(v)}"/>`
