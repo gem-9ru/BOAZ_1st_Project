@@ -1,0 +1,339 @@
+<meta charset="utf-8">
+<title>부산 청년 일자리 — 내 전공은 어떤가</title>
+<style>
+:root{--s1:#fcfcfb;--s2:#f4f3f0;--s3:#eceae5;--tp:#0b0b0b;--ts:#52514e;--tm:#8a8880;--grid:#e5e4e0;
+ --c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--pos:#2a78d6;--neg:#e34948;--line:#dedcd6}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme=light])){
+ --s1:#1a1a19;--s2:#232322;--s3:#2c2c2a;--tp:#fff;--ts:#c3c2b7;--tm:#8a8880;--grid:#383835;
+ --c1:#3987e5;--c2:#d95926;--c3:#199e70;--pos:#3987e5;--neg:#e66767;--line:#3d3d3a}}
+:root[data-theme=dark]{--s1:#1a1a19;--s2:#232322;--s3:#2c2c2a;--tp:#fff;--ts:#c3c2b7;--tm:#8a8880;
+ --grid:#383835;--c1:#3987e5;--c2:#d95926;--c3:#199e70;--pos:#3987e5;--neg:#e66767;--line:#3d3d3a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--s1);color:var(--tp);
+ font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif}
+.w{max-width:980px;margin:0 auto;padding:0 22px}
+svg{display:block;width:100%;height:auto}
+/* 1층 */
+.hero{padding:52px 0 30px;border-bottom:1px solid var(--line)}
+h1{font-size:30px;margin:0 0 8px;letter-spacing:-.6px;line-height:1.28}
+.lede{color:var(--ts);font-size:15px;margin:0 0 30px;max-width:640px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:26px}
+.kpi{background:var(--s2);border-radius:10px;padding:15px 17px}
+.kpi .k{font-size:12px;color:var(--tm);margin-bottom:5px}
+.kpi .v{font-size:25px;font-weight:680;letter-spacing:-.6px;line-height:1.15}
+.kpi .d{font-size:12px;color:var(--ts);margin-top:3px}
+.up{color:var(--pos)}.dn{color:var(--neg)}
+/* 2층 */
+.sec{padding:44px 0;border-bottom:1px solid var(--line)}
+h2{font-size:21px;margin:0 0 4px;letter-spacing:-.3px}
+.sd{color:var(--ts);font-size:13.5px;margin:0 0 20px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px}
+.chip{border:1px solid var(--line);background:var(--s1);color:var(--ts);border-radius:999px;
+ padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:.12s}
+.chip:hover{border-color:var(--c1);color:var(--tp)}
+.chip[aria-pressed=true]{background:var(--c1);border-color:var(--c1);color:#fff;font-weight:600}
+.chip .n{opacity:.62;font-size:11.5px;margin-left:5px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:720px){.cards{grid-template-columns:1fr}}
+.card{background:var(--s2);border-radius:12px;padding:18px 20px 20px}
+.ct{font-size:12.5px;color:var(--tm);margin-bottom:11px;font-weight:600;letter-spacing:.1px}
+.big{font-size:30px;font-weight:700;letter-spacing:-.7px;line-height:1.18}
+.sub2{font-size:13px;color:var(--ts);margin-top:6px;line-height:1.5}
+.pill{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;
+ background:var(--s3);color:var(--ts);margin-top:9px}
+.pill.warn{background:#e3494822;color:var(--neg)}
+.pill.ok{background:#1baf7a22;color:var(--c3)}
+.bars{margin-top:12px}
+.brow{display:flex;align-items:center;gap:9px;margin:7px 0;font-size:12.5px}
+.brow .bl{width:62px;color:var(--ts);flex:none;text-align:right}
+.brow .bt{flex:1;height:15px;background:var(--s3);border-radius:4px;overflow:hidden}
+.brow .bf{display:block;height:100%;border-radius:4px}
+.brow .bv{width:46px;flex:none;font-variant-numeric:tabular-nums;font-weight:600}
+.plist{margin:10px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--ts);
+ max-height:150px;overflow:auto}
+.plist li{padding:4px 0;border-bottom:1px solid var(--line);display:flex;gap:8px}
+.plist .tag{flex:none;font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--s3);height:fit-content}
+.plist .tag.m{background:#2a78d622;color:var(--c1)}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:auto}
+.toggle button{border:0;background:var(--s1);color:var(--ts);font:inherit;font-size:12px;
+ padding:5px 12px;cursor:pointer}
+.toggle button[aria-pressed=true]{background:var(--c1);color:#fff}
+.rowhead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+/* 3층 */
+.note{font-size:12.5px;color:var(--tm);line-height:1.6;margin-top:14px}
+.key{color:var(--tp);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:right;white-space:nowrap}
+th{color:var(--tm);font-weight:600;font-size:11.5px}
+th:first-child,td:first-child{text-align:left}
+tr.hi td{background:var(--s2);font-weight:600}
+details{margin-top:16px;font-size:13px;color:var(--ts)}
+summary{cursor:pointer;color:var(--tm);padding:4px 0}
+.foot{padding:34px 0 70px;color:var(--tm);font-size:12px;line-height:1.7}
+#tip{position:fixed;pointer-events:none;background:var(--s1);border:1px solid var(--line);
+ border-radius:7px;padding:8px 11px;font-size:12.5px;box-shadow:0 6px 20px #0003;opacity:0;
+ transition:opacity .12s;z-index:20;max-width:230px}
+.ax{font-size:11px;fill:var(--tm)}.vl{font-size:11.5px;fill:var(--ts)}
+.vlb{font-size:12px;fill:var(--tp);font-weight:650}
+</style>
+<div id="tip"></div>
+
+<div class="hero"><div class="w">
+<h1>부산 청년 일자리 —<br>내 전공은 부산에서 어떤가</h1>
+<p class="lede">부산 소재 대학 졸업자 36,996명과 부산 노동수요 15만 건, 그리고 실제로 어디에 취업했는지를
+한 축으로 이어 붙였다. 전공을 고르면 그 전공이 부산에서 마주하는 조건이 나온다.</p>
+<div class="kpis" id="kpis"></div>
+<svg id="cAge" viewBox="0 0 900 190" preserveAspectRatio="xMinYMin meet"></svg>
+<p class="note">부산 연령별 순이동, 2025년. <span class="key">20대 초반은 들어오고 20대 후반에 빠져나간다.</span>
+전환폭 −6,364는 2위 대전(−1,836)의 3.5배이고, <span class="key">20-24세가 순유입인 비수도권 광역시는 부산뿐</span>이다.</p>
+</div></div>
+
+<div class="sec"><div class="w">
+<h2>전공을 골라 보세요</h2>
+<p class="sd">부산 소재 대학 12개 계열 · 괄호 안은 연간 졸업자 수</p>
+<div class="chips" id="chips" role="group" aria-label="전공계열 선택"></div>
+<div class="rowhead">
+  <span style="font-size:12.5px;color:var(--tm)">수요를 어느 채널로 볼까요</span>
+  <div class="toggle" id="ch" role="group">
+    <button data-v="공공" aria-pressed="true">공공 고용서비스</button>
+    <button data-v="민간" aria-pressed="false">민간 채용사이트</button>
+    <button data-v="둘다" aria-pressed="false">둘 다</button>
+  </div>
+</div>
+<div class="cards" id="cards"></div>
+</div></div>
+
+<div class="sec"><div class="w">
+<h2>12개 계열 전체</h2>
+<p class="sd">정책 담당자용 · 선택한 계열은 강조 표시된다</p>
+<svg id="cMap" viewBox="0 0 900 400" preserveAspectRatio="xMinYMin meet"></svg>
+<p class="note"><b>⚠ 12계열 중 8개는 전용 직종이 없다</b>(전용도 0.5 미만 — 기계·전기전자, 인문·어학, 생활과학·화학, IT·컴퓨터, 교육, 건설·토목, 물류·운송, 자연과학).
+이 계열들의 «N명당 1자리»는 학과–직종 배분 가정에 의존하므로 <b>절대 수준이 아니라 순위로만</b> 읽는다.
+전용 직종이 뚜렷한 것은 디자인·예술(0.9) · 보건·의료(0.8) · 경영·사무(0.7)다.<br><br>
+가로축은 부산 이탈률, 세로축은 배출 비중, 원 크기는 졸업자 수.
+<span class="key">채운 원은 떠났을 때 임금이 오르는 것이 통계적으로 확인된 계열</span>이고,
+빈 원은 차이가 뚜렷하지 않은 계열이다.</p>
+<details open><summary>전체 수치 표</summary><div id="tbl"></div></details>
+</div></div>
+
+<div class="sec"><div class="w">
+<h2>부산 안에서는 어디인가</h2>
+<p class="sd">청년 1만명당 대졸 신입 공고 · 생활인구(통신 기지국) 기반 청년유입비</p>
+<svg id="cSpace" viewBox="0 0 900 360" preserveAspectRatio="xMinYMin meet"></svg>
+<div class="lg"><span><i style="background:var(--c1)"></i>청년 1만명당 대졸신입 공고</span>
+<span><i style="background:var(--c2)"></i>청년유입비 (직장인구÷주거인구)</span></div>
+<p class="note" id="spNote"></p>
+</div></div>
+
+<div class="sec"><div class="w">
+<h2>정책은 어느 쪽에 있나</h2>
+<p class="sd">2025년 부산광역시 청년정책 109개 사업 · 계열이 명시된 32개의 성격</p>
+<svg id="cPol" viewBox="0 0 900 330" preserveAspectRatio="xMinYMin meet"></svg>
+<p class="note" id="polNote"></p>
+</div></div>
+
+<div class="foot"><div class="w">
+<b style="color:var(--ts)">데이터</b> 교육부·KEDI 고등교육기관 졸업자 취업통계 2024 ·
+고용24 구인구직통계 2025.08~2026.07 · 채용공고 직접 크롤링 2026-09-07 ·
+GOMS 대졸자직업이동경로조사 2016~2019 4개 코호트 · 국내인구이동통계 2025 ·
+2025년 부산광역시 청년정책 시행계획<br><br>
+<b style="color:var(--ts)">읽을 때 주의</b>
+수요 비중은 채널에 따라 2배까지 달라지므로 절대 수준이 아니라 계열 간 비교로 읽는다 ·
+구인배수의 분모는 전 연령·전 학력 구직자라 계열 간 상대 비교로만 쓴다 ·
+임금 차이는 인과가 아니다(떠난 사람이 더 번다는 것이지 떠나면 더 벌게 된다는 뜻이 아니다) ·
+GOMS는 2015~2018년 졸업 코호트라 현재 수치가 아니라 구조의 보강 증거다 ·
+농림·수산은 표본 43명으로 이탈률·임금을 추정하지 않았다
+</div></div>
+<script>const D={"kpi": {"a2024": 927, "a2529": -5437, "총순유출": -12181, "직업비중": 74.4, "주택비중": 17.4, "구인배수": 0.345, "전국구인배수": 0.406, "전환폭": -6364, "전환2위": -1836, "누적20년": 186499, "졸업자": 36996, "대졸신입총": 1070, "대졸신입N명당": 34.6}, "age": {"labels": ["0-4세", "5-9세", "10-14세", "15-19세", "20-24세", "25-29세", "30-34세", "35-39세", "40-44세", "45-49세", "50-54세", "55-59세", "60-64세", "65-69세", "70-74세", "75-79세", "80세이상"], "values": [265, 141, -96, 556, 927, -5437, -2236, -482, -323, -670, -709, -1070, -1206, -801, -458, -269, -313]}, "reason": {"labels": ["직업", "가족", "주택", "자연환경", "기타", "주거환경", "교육"], "values": [-9063, -3359, -2118, -1223, -812, 915, 3479]}, "series": [{"계열": "경영·사무", "졸업자": 10350, "배출": 28.5, "공공": 10.3, "민간": 19.8, "구인배수": 0.22, "경쟁자": 25.1, "대졸요구율": 33.3, "주력직종": "경영·사무·금융·보험", "주력비중": 82.0, "이탈률": 37.1, "수도권": 10.1, "잔류소득": 214.0, "이탈소득": 231.0, "프리미엄": 1.0, "유의": false, "표본": 991, "양성": 3, "매칭": 0, "창업": 0, "사업": [["국제금융기구 진출 아카데미 운영", "양성"], ["국제마케팅 전문인력 양성사업", "양성"], ["해양금융 전문인력 양성지원", "양성"]], "대졸신입공고": 413.0, "전용도": 0.69, "배분의존": false}, {"계열": "기계·전기전자", "졸업자": 4927, "배출": 13.6, "공공": 11.0, "민간": 12.5, "구인배수": 0.32, "경쟁자": 55.1, "대졸요구율": 26.4, "주력직종": "연구·공학기술", "주력비중": 50.0, "이탈률": 56.0, "수도권": 11.9, "잔류소득": 211.0, "이탈소득": 266.0, "프리미엄": 25.6, "유의": true, "표본": 1041, "양성": 7, "매칭": 0, "창업": 0, "사업": [["기술사관 육성사업", "양성"], ["반도체 분야 전문인력 양성 (반도체 특성화대학 지원사업, 부산대)", "양성"], ["반도체 분야 전문인력 양성 (전력반도체 산업 육성을 위한 종합기술사업)", "양성"], ["반도체 분야 전문인력 양성 (첨단산업(반도체) 인재양성 부트캠프 사업,한국해양대)", "양성"], ["신발산업 인력양성", "양성"], ["조선해양플랜트산업 기능인력 양성", "양성"], ["창의융합형 공학인재양성 지원사업", "양성"]], "대졸신입공고": 89.0, "전용도": 0.5, "배분의존": true}, {"계열": "디자인·예술", "졸업자": 4390, "배출": 12.1, "공공": 0.8, "민간": 3.5, "구인배수": 0.06, "경쟁자": 171.7, "대졸요구율": 22.1, "주력직종": "예술·디자인·방송·스포츠", "주력비중": 100.0, "이탈률": 37.7, "수도권": 16.2, "잔류소득": 175.0, "이탈소득": 187.0, "프리미엄": 5.5, "유의": false, "표본": 564, "양성": 4, "매칭": 0, "창업": 1, "사업": [["대학생 작품제작 참여지원", "생활지원"], ["부산 로컬크리에이터레벨업 사업", "창업"], ["부산 콘텐츠 아카데미 운영", "양성"], ["부산웹툰캠퍼스 운영", "양성"], ["부산콘텐츠유니버시아드 지원", "생활지원"], ["사상인디스테이션 운영", "생활지원"], ["신진예술인 인큐베이팅 및 경력개발 지원", "생활지원"], ["신진작가 아트페어 개최 지원", "생활지원"], ["이스포츠 대학리그 개최", "생활지원"], ["패션디자인 분야 인력양성 (대학패션페스티벌 개최 지원)", "양성"], ["패션디자인 분야 인력양성 (부산패션창작 스튜디오 운영)", "양성"]], "대졸신입공고": 26.0, "전용도": 0.91, "배분의존": false}, {"계열": "보건·의료", "졸업자": 4281, "배출": 11.8, "공공": 2.8, "민간": 13.4, "구인배수": 0.16, "경쟁자": 57.7, "대졸요구율": 42.3, "주력직종": "보건·의료", "주력비중": 100.0, "이탈률": 32.6, "수도권": 12.4, "잔류소득": 244.0, "이탈소득": 257.0, "프리미엄": -4.7, "유의": false, "표본": 373, "양성": 1, "매칭": 0, "창업": 0, "사업": [["디지털 치의학 신기술 교육지원 사업", "양성"]], "대졸신입공고": 74.0, "전용도": 0.83, "배분의존": false}, {"계열": "인문·어학", "졸업자": 3312, "배출": 9.1, "공공": 8.4, "민간": 13.0, "구인배수": 0.25, "경쟁자": 23.9, "대졸요구율": 40.6, "주력직종": "교육·법률·사회복지·경찰·소방", "주력비중": 47.0, "이탈률": 41.1, "수도권": 18.0, "잔류소득": 203.0, "이탈소득": 217.0, "프리미엄": 12.0, "유의": true, "표본": 697, "양성": 0, "매칭": 0, "창업": 0, "사업": [], "대졸신입공고": 139.0, "전용도": 0.26, "배분의존": true}, {"계열": "생활과학·화학", "졸업자": 2843, "배출": 7.8, "공공": 10.1, "민간": 14.0, "구인배수": 0.21, "경쟁자": 41.6, "대졸요구율": 36.0, "주력직종": "연구·공학기술", "주력비중": 39.0, "이탈률": 32.9, "수도권": 9.4, "잔류소득": 178.0, "이탈소득": 211.0, "프리미엄": 16.7, "유의": true, "표본": 609, "양성": 0, "매칭": 0, "창업": 0, "사업": [], "대졸신입공고": 68.0, "전용도": 0.23, "배분의존": true}, {"계열": "IT·컴퓨터", "졸업자": 1917, "배출": 5.3, "공공": 3.2, "민간": 9.0, "구인배수": 0.14, "경쟁자": 37.8, "대졸요구율": 45.2, "주력직종": "연구·공학기술", "주력비중": 100.0, "이탈률": 46.4, "수도권": 24.6, "잔류소득": 209.0, "이탈소득": 239.0, "프리미엄": 8.0, "유의": false, "표본": 274, "양성": 5, "매칭": 0, "창업": 0, "사업": [["부산디지털혁신아카데미 운영", "양성"], ["인공지능소프트웨어 분야 전문인력 양성 (SW중심대학 지원)", "양성"], ["인공지능소프트웨어 분야 전문인력 양성 (인공지능융합 혁신인재양성 사업 지원)", "양성"], ["인공지능소프트웨어 분야 전문인력 양성 (지역 ICT이노베이션스퀘어 확산)", "양성"], ["클라우드 융합 계약학과 운영 지원", "양성"]], "대졸신입공고": 51.0, "전용도": 0.26, "배분의존": true}, {"계열": "교육", "졸업자": 1593, "배출": 4.4, "공공": 7.7, "민간": 5.8, "구인배수": 0.35, "경쟁자": 16.8, "대졸요구율": 55.7, "주력직종": "교육·법률·사회복지·경찰·소방", "주력비중": 100.0, "이탈률": 33.6, "수도권": 5.9, "잔류소득": 192.0, "이탈소득": 208.0, "프리미엄": -0.3, "유의": false, "표본": 335, "양성": 0, "매칭": 0, "창업": 0, "사업": [], "대졸신입공고": 95.0, "전용도": 0.32, "배분의존": true}, {"계열": "건설·토목", "졸업자": 1335, "배출": 3.7, "공공": 3.0, "민간": 6.4, "구인배수": 0.17, "경쟁자": 51.9, "대졸요구율": 34.9, "주력직종": "연구·공학기술", "주력비중": 70.0, "이탈률": 41.1, "수도권": 15.6, "잔류소득": 207.0, "이탈소득": 261.0, "프리미엄": 26.6, "유의": true, "표본": 290, "양성": 1, "매칭": 0, "창업": 0, "사업": [["청년도시재생사 양성 사업", "양성"]], "대졸신입공고": 26.0, "전용도": 0.16, "배분의존": true}, {"계열": "물류·운송", "졸업자": 781, "배출": 2.1, "공공": 7.9, "민간": 11.3, "구인배수": 0.26, "경쟁자": 32.7, "대졸요구율": 20.6, "주력직종": "연구·공학기술", "주력비중": 100.0, "이탈률": 57.6, "수도권": 8.8, "잔류소득": 227.0, "이탈소득": 287.0, "프리미엄": 26.0, "유의": true, "표본": 157, "양성": 1, "매칭": 1, "창업": 0, "사업": [["부산지역 항공인력 인턴십 지원사업", "수요·매칭"], ["항만물류 전문인력 양성사업 (해운항만물류 전문인력 양성사업)", "양성"]], "대졸신입공고": 24.0, "전용도": 0.1, "배분의존": true}, {"계열": "자연과학", "졸업자": 476, "배출": 1.3, "공공": 4.6, "민간": 8.1, "구인배수": 0.2, "경쟁자": 27.4, "대졸요구율": 48.4, "주력직종": "연구·공학기술", "주력비중": 70.0, "이탈률": 48.0, "수도권": 14.2, "잔류소득": 186.0, "이탈소득": 241.0, "프리미엄": 47.7, "유의": true, "표본": 116, "양성": 0, "매칭": 0, "창업": 0, "사업": [], "대졸신입공고": 17.0, "전용도": 0.04, "배분의존": true}, {"계열": "농림·수산", "졸업자": 151, "배출": 0.4, "공공": 1.3, "민간": 0.3, "구인배수": 0.5, "경쟁자": 151.0, "대졸요구율": 7.1, "주력직종": "농림어업", "주력비중": 100.0, "이탈률": null, "수도권": null, "잔류소득": null, "이탈소득": null, "프리미엄": null, "유의": null, "표본": null, "양성": 0, "매칭": 2, "창업": 0, "사업": [["청년 어촌 정착지원", "수요·매칭"], ["청년농업인 영농정착 지원", "수요·매칭"]], "대졸신입공고": 1.0, "전용도": 1.0, "배분의존": false}], "meta": {"양성계": 22, "매칭계": 3, "전계열": 77, "예산교육": 57.6, "예산일자리": 12.8, "국비교육": 77.1, "국비일자리": 45.2, "제조_조선금속": 28.9, "제조_전자정밀": 1.4, "공장수": 11548, "산단고용": 111684, "강서산단비중": 55.4, "고용우수기업": 45, "고용우수_지식산업": 8}, "space": {"labels": ["강서구", "동구", "중구", "해운대구", "기장군", "동래구", "사상구", "연제구", "영도구", "남구", "부산진구", "수영구", "금정구", "사하구", "북구", "서구"], "밀도": [281.6, 101.4, 92.3, 63.5, 62.9, 55.3, 45.4, 38.1, 35.3, 33.7, 31.0, 30.9, 30.2, 25.2, 24.1, 22.0], "유입비": [0.51, 0.34, 0.54, 0.24, 0.25, 0.16, 0.23, 0.17, 0.21, 0.24, 0.24, 0.16, 0.25, 0.18, 0.13, 0.22], "여성유입": [0.23, 0.24, 0.43, 0.15, 0.14, 0.13, 0.16, 0.15, 0.11, 0.13, 0.17, 0.12, 0.15, 0.12, 0.11, 0.14], "남성유입": [0.44, 0.23, 0.4, 0.13, 0.16, 0.11, 0.2, 0.13, 0.14, 0.14, 0.15, 0.11, 0.15, 0.12, 0.08, 0.13], "청년인구": [6428, 4241, 2816, 22993, 10495, 15910, 13645, 12592, 5390, 18110, 28348, 11659, 15576, 19841, 17045, 5904], "대졸신입": [181, 43, 26, 146, 66, 88, 62, 48, 19, 61, 88, 36, 47, 50, 41, 13], "산단고용": [61836, 0, 0, 15556, 16054, 0, 1612, 0, 0, 0, 0, 0, 2567, 14059, 0, 0]}, "gender": {"보건·의료": {"여성비중": 73.1, "취업률격차": -6.7, "유지격차": -8.2, "이탈남": 42.2, "이탈여": 29.6, "잔류남": 298.0, "잔류여": 230.0}, "교육": {"여성비중": 71.8, "취업률격차": -10.9, "유지격차": -0.9, "이탈남": 46.2, "이탈여": 31.0, "잔류남": 226.0, "잔류여": 187.0}, "인문·어학": {"여성비중": 64.3, "취업률격차": -3.5, "유지격차": 2.8, "이탈남": 42.7, "이탈여": 40.1, "잔류남": 228.0, "잔류여": 184.0}, "디자인·예술": {"여성비중": 63.6, "취업률격차": -2.0, "유지격차": 3.0, "이탈남": 37.6, "이탈여": 37.8, "잔류남": 204.0, "잔류여": 155.0}, "생활과학·화학": {"여성비중": 60.6, "취업률격차": 3.3, "유지격차": 4.9, "이탈남": 38.8, "이탈여": 29.7, "잔류남": 199.0, "잔류여": 169.0}, "경영·사무": {"여성비중": 59.3, "취업률격차": 1.4, "유지격차": 6.7, "이탈남": 43.9, "이탈여": 31.0, "잔류남": 252.0, "잔류여": 185.0}, "농림·수산": {"여성비중": 55.0, "취업률격차": 9.0, "유지격차": 17.6, "이탈남": null, "이탈여": null, "잔류남": null, "잔류여": null}, "자연과학": {"여성비중": 41.8, "취업률격차": 0.7, "유지격차": 9.1, "이탈남": 57.9, "이탈여": 37.5, "잔류남": 219.0, "잔류여": 161.0}, "건설·토목": {"여성비중": 29.8, "취업률격차": 6.5, "유지격차": 6.6, "이탈남": 43.7, "이탈여": 35.1, "잔류남": 228.0, "잔류여": 163.0}, "IT·컴퓨터": {"여성비중": 24.7, "취업률격차": 1.8, "유지격차": 14.6, "이탈남": 45.1, "이탈여": 50.9, "잔류남": 214.0, "잔류여": 192.0}, "물류·운송": {"여성비중": 20.0, "취업률격차": 14.6, "유지격차": 13.6, "이탈남": 58.1, "이탈여": null, "잔류남": 237.0, "잔류여": null}, "기계·전기전자": {"여성비중": 17.2, "취업률격차": 11.3, "유지격차": 8.4, "이탈남": 58.1, "이탈여": 44.9, "잔류남": 222.0, "잔류여": 169.0}}};
+const NS="http://www.w3.org/2000/svg", tip=document.getElementById("tip");
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+const T=(n,a,t)=>{const e=el(n,a);e.textContent=t;return e};
+const f=n=>n.toLocaleString("ko-KR");
+function hov(n,h){n.addEventListener("pointerenter",()=>{tip.innerHTML=h;tip.style.opacity=1});
+ n.addEventListener("pointermove",e=>{tip.style.left=Math.min(e.clientX+14,innerWidth-250)+"px";tip.style.top=(e.clientY-10)+"px"});
+ n.addEventListener("pointerleave",()=>tip.style.opacity=0);}
+const vbar=(x,y,w,h,r,up)=>{r=Math.min(r,w/2,h);return up
+ ?`M${x},${y+h}V${y+r}a${r},${r} 0 0 1 ${r},-${r}h${w-2*r}a${r},${r} 0 0 1 ${r},${r}V${y+h}Z`
+ :`M${x},${y}V${y+h-r}a${r},${r} 0 0 0 ${r},${r}h${w-2*r}a${r},${r} 0 0 0 ${r},-${r}V${y}Z`};
+let SEL=D.series[0].계열, CH="공공";
+
+/* ── KPI ── */
+(()=>{const k=D.kpi, box=document.getElementById("kpis");
+ [["20-24세 순이동",`<span class="up">+${f(k.a2024)}</span>`,"들어온다"],
+  ["25-29세 순이동",`<span class="dn">${f(k.a2529)}</span>`,"나간다"],
+  ["떠나는 이유 1위",`직업 ${k.직업비중}%`,`주택은 ${k.주택비중}%`],
+  ["대졸 신입 공고",`${f(1070)}건`,"졸업자 36,996명 ↔ 34.6명당 1자리"]
+ ].forEach(([a,b,c])=>{const d=document.createElement("div");d.className="kpi";
+  d.innerHTML=`<div class="k">${a}</div><div class="v">${b}</div><div class="d">${c}</div>`;box.appendChild(d);});})();
+
+/* ── 연령별 순이동 ── */
+(()=>{const s=document.getElementById("cAge"),W=900,H=190,M={t:16,r:10,b:34,l:52},d=D.age;
+ const iw=W-M.l-M.r,ih=H-M.t-M.b,n=d.values.length,g=iw/n,bw=g*.66;
+ const mx=Math.max(...d.values.map(Math.abs)),zero=M.t+ih*.28,sc=v=>ih/(mx*2.1)*v;
+ [-4000,-2000,0,2000].forEach(v=>{const y=zero-sc(v);
+  s.appendChild(el("line",{x1:M.l,x2:W-M.r,y1:y,y2:y,stroke:"var(--grid)","stroke-width":v?1:1.5}));
+  s.appendChild(T("text",{x:M.l-7,y:y+4,"text-anchor":"end",class:"ax"},f(v)));});
+ d.values.forEach((v,i)=>{const x=M.l+g*i+(g-bw)/2,up=v>0,h=Math.abs(sc(v));
+  const key=["20-24세","25-29세"].includes(d.labels[i]);
+  const p=el("path",{d:vbar(x,up?zero-h:zero,bw,h,3,up),fill:up?"var(--pos)":"var(--neg)",opacity:key?1:.4});
+  hov(p,`<b>${d.labels[i]}</b><br>${v>0?"+":""}${f(v)}명`);s.appendChild(p);
+  if(key)s.appendChild(T("text",{x:x+bw/2,y:up?zero-h-7:zero+h+15,"text-anchor":"middle",class:"vlb"},(v>0?"+":"")+f(v)));
+  s.appendChild(T("text",{x:x+bw/2,y:H-M.b+15,"text-anchor":"middle",class:"ax"},d.labels[i].replace("세","")));});})();
+
+/* ── 칩 ── */
+(()=>{const c=document.getElementById("chips");
+ D.series.forEach(s=>{const b=document.createElement("button");b.className="chip";b.type="button";
+  b.setAttribute("aria-pressed",s.계열===SEL);
+  b.innerHTML=`${s.계열}<span class="n">${f(s.졸업자)}</span>`;
+  b.onclick=()=>{SEL=s.계열;[...c.children].forEach(x=>x.setAttribute("aria-pressed",false));
+   b.setAttribute("aria-pressed",true);location.hash=encodeURIComponent(SEL);draw();};
+  c.appendChild(b);});
+ document.querySelectorAll("#ch button").forEach(b=>b.onclick=()=>{
+  CH=b.dataset.v;document.querySelectorAll("#ch button").forEach(x=>x.setAttribute("aria-pressed",x===b));draw();});
+ const h=decodeURIComponent(location.hash.slice(1));
+ if(h&&D.series.some(s=>s.계열===h)){SEL=h;[...c.children].forEach((x,i)=>x.setAttribute("aria-pressed",D.series[i].계열===h));}})();
+
+/* ── 4칸 카드 ── */
+function cards(){const s=D.series.find(x=>x.계열===SEL),box=document.getElementById("cards");
+ const dem=CH==="공공"?s.공공:CH==="민간"?s.민간:(s.공공+s.민간)/2;
+ const gap=s.배출-dem, over=gap>0;
+ const bar=(lab,v,mx,c)=>`<div class="brow"><span class="bl">${lab}</span>
+   <span class="bt"><span class="bf" style="width:${Math.max(v/mx*100,1.5)}%;background:${c}"></span></span>
+   <span class="bv">${v.toFixed(1)}%</span></div>`;
+ const mx=Math.max(s.배출,s.공공,s.민간,1);
+ let c1=`<div class="card"><div class="ct">① 배출과 수요</div>
+  <div class="big">${over?"배출이 많다":"수요가 많다"}</div>
+  <div class="sub2">부산이 배출하는 비중과 부산이 찾는 비중의 차이 <b>${gap>0?"+":""}${gap.toFixed(1)}%p</b></div>
+  <div class="bars">${bar("배출",s.배출,mx,"var(--c1)")}
+   ${CH!=="민간"?bar("공공수요",s.공공,mx,"var(--c2)"):""}
+   ${CH!=="공공"?bar("민간수요",s.민간,mx,"var(--c3)"):""}</div>
+  <div class="pill">연간 졸업자 ${f(s.졸업자)}명 · 주로 ${s.주력직종.split("·")[0]} 직종으로 간다</div></div>`;
+
+ let c2=`<div class="card"><div class="ct">② 대졸 신입 자리는 몇 개인가</div>
+  <div class="big">${s.경쟁자}명<span style="font-size:17px;font-weight:500;color:var(--ts)"> 당 1자리</span></div>
+  <div class="sub2">부산의 <b>대졸 신입 공고 ${s.대졸신입공고}건</b>을 이 계열 졸업생 ${f(s.졸업자)}명이 놓고 경쟁한다<br>
+   (부산 전체: 대졸신입 1,070건 ↔ 졸업자 36,996명 = 34.6명당 1자리)</div>
+  <div class="pill ${s.경쟁자>50?"warn":""}">${s.경쟁자>50?"전 계열 중 하위권":"평균 수준"} · 대졸 요구 ${s.대졸요구율}%</div>
+  ${s.배분의존?`<div class="pill" style="background:transparent;border:1px dashed var(--line);color:var(--tm);margin-top:6px">
+    ⚠ 이 계열은 전용 직종이 없다(전용도 ${s.전용도}). 위 숫자는 학과–직종 배분 가정에 의존하므로 순위 비교로만 읽는다</div>`:""}</div>`;
+
+ let c3;
+ if(s.이탈률==null){c3=`<div class="card"><div class="ct">③ 남으면 / 떠나면</div>
+   <div class="big" style="color:var(--tm)">추정하지 않음</div>
+   <div class="sub2">조사 표본이 43명으로 적어 이 계열은 추정하지 않았다</div></div>`;}
+ else{const dw=Math.round(s.이탈소득-s.잔류소득);
+  c3=`<div class="card"><div class="ct">③ 남으면 / 떠나면</div>
+   <div class="big">10명 중 ${Math.round(s.이탈률/10)}명<span style="font-size:17px;font-weight:500;color:var(--ts)"> 이 떠났다</span></div>
+   <div class="sub2">이탈률 ${s.이탈률}% · 그중 수도권행 ${s.수도권}%<br>
+    부산에 남으면 월 <b>${f(s.잔류소득)}만원</b>, 떠나면 월 <b>${f(s.이탈소득)}만원</b></div>
+   <div class="pill ${s.유의?"warn":""}">${s.유의
+     ?`떠난 사람이 월 ${f(dw)}만원 더 받는다 (차이 뚜렷)`
+     :`월 ${f(dw)}만원 차이지만 뚜렷하지 않다`}</div>
+   ${(()=>{const G=D.gender[s.계열];
+     if(!G||G.잔류남==null||G.잔류여==null)return "";
+     return `<div class="pill" style="background:transparent;border:1px dashed var(--line);color:var(--tm);margin-top:6px">
+      성별 — 부산에 남으면 남 ${f(G.잔류남)}만원 · <b style="color:var(--tp)">여 ${f(G.잔류여)}만원</b>
+      (이탈률 남 ${G.이탈남}% · 여 ${G.이탈여}%)</div>`;})()}</div>`;}
+
+ const tot=s.양성+s.매칭+s.창업;
+ let c4=`<div class="card"><div class="ct">④ 이 계열을 겨냥한 정책</div>
+  <div class="big">${s.양성} : ${s.매칭}</div>
+  <div class="sub2">사람을 더 기르는 사업 : 자리를 잇는 사업<br>
+   ${tot===0?"이 계열을 명시한 사업이 하나도 없다":`전용 사업 ${s.사업.length}개`}</div>
+  ${s.사업.length?`<ul class="plist">${s.사업.map(([n,t])=>
+    `<li><span class="tag ${t==="수요·매칭"?"m":""}">${t}</span><span>${n}</span></li>`).join("")}</ul>`
+   :`<div class="pill warn">전용 사업 없음</div>`}</div>`;
+ box.innerHTML=c1+c2+c3+c4;}
+
+/* ── 전체 지도 ── */
+function map(){const s=document.getElementById("cMap");s.innerHTML="";
+ const W=900,H=400,M={t:22,r:26,b:52,l:60};
+ const iw=W-M.l-M.r,ih=H-M.t-M.b;
+ const X=v=>M.l+iw/40*(v-28),Y=v=>M.t+ih-ih/32*v,R=v=>5+Math.sqrt(v)/16;
+ [0,10,20,30].forEach(v=>{const y=Y(v);
+  s.appendChild(el("line",{x1:M.l,x2:W-M.r,y1:y,y2:y,stroke:"var(--grid)"}));
+  s.appendChild(T("text",{x:M.l-7,y:y+4,"text-anchor":"end",class:"ax"},v+"%"));});
+ [30,40,50,60].forEach(v=>s.appendChild(T("text",{x:X(v),y:H-30,"text-anchor":"middle",class:"ax"},v+"%")));
+ s.appendChild(T("text",{x:M.l+iw/2,y:H-8,"text-anchor":"middle",class:"vl"},"부산을 떠난 비율 →"));
+ s.appendChild(T("text",{x:15,y:M.t+ih/2,"text-anchor":"middle",class:"vl",
+   transform:`rotate(-90 15 ${M.t+ih/2})`},"배출 비중 →"));
+ D.series.filter(x=>x.이탈률!=null).forEach(x=>{
+  const cx=X(x.이탈률),cy=Y(x.배출),r=R(x.졸업자),on=x.계열===SEL;
+  const c=el("circle",{cx,cy,r,fill:x.유의?"var(--c1)":"var(--s1)",
+   "fill-opacity":x.유의?(on?.85:.45):1,stroke:on?"var(--c2)":"var(--c1)","stroke-width":on?3:1.8});
+  hov(c,`<b>${x.계열}</b><br>이탈률 ${x.이탈률}%<br>배출 ${x.배출}% (${f(x.졸업자)}명)<br>
+   임금차 ${x.프리미엄>0?"+":""}${x.프리미엄}%${x.유의?" (뚜렷)":" (뚜렷하지 않음)"}<br>양성 ${x.양성} : 매칭 ${x.매칭}`);
+  c.style.cursor="pointer";c.onclick=()=>{SEL=x.계열;
+   document.querySelectorAll("#chips .chip").forEach((b,i)=>b.setAttribute("aria-pressed",D.series[i].계열===SEL));
+   location.hash=encodeURIComponent(SEL);draw();};
+  s.appendChild(c);
+  s.appendChild(T("text",{x:cx,y:cy-r-6,"text-anchor":"middle",class:on?"vlb":"vl"},x.계열));});}
+
+/* ── 표 ── */
+function tbl(){const h=["계열","졸업자","배출%","공공수요%","민간수요%","구인배수","이탈률%","잔류 월소득","이탈 월소득","임금차%","양성","매칭"];
+ document.getElementById("tbl").innerHTML="<table><tr>"+h.map(x=>`<th>${x}</th>`).join("")+"</tr>"+
+  D.series.map(s=>`<tr class="${s.계열===SEL?"hi":""}"><td>${s.계열}</td><td>${f(s.졸업자)}</td>
+   <td>${s.배출}</td><td>${s.공공}</td><td>${s.민간}</td><td>${s.구인배수}</td>
+   <td>${s.이탈률??"—"}</td><td>${s.잔류소득?f(s.잔류소득):"—"}</td><td>${s.이탈소득?f(s.이탈소득):"—"}</td>
+   <td>${s.프리미엄==null?"—":(s.프리미엄>0?"+":"")+s.프리미엄+(s.유의?"*":"")}</td>
+   <td>${s.양성}</td><td>${s.매칭}</td></tr>`).join("")+"</table>";}
+
+/* ── 정책 ── */
+function pol(){const s=document.getElementById("cPol");s.innerHTML="";
+ const W=900,H=330,M={t:16,r:150,b:30,l:118},d=D.series.filter(x=>x.양성+x.매칭+x.창업>0||x.이탈률!=null);
+ const iw=W-M.l-M.r,ih=H-M.t-M.b,g=ih/d.length,bh=Math.min(g*.5,16),mx=8;
+ [0,2,4,6,8].forEach(v=>{const x=M.l+iw/mx*v;
+  s.appendChild(el("line",{x1:x,x2:x,y1:M.t,y2:M.t+ih,stroke:"var(--grid)"}));
+  s.appendChild(T("text",{x,y:H-10,"text-anchor":"middle",class:"ax"},v+"개"));});
+ d.sort((a,b)=>(b.이탈률??0)-(a.이탈률??0)).forEach((x,i)=>{
+  const y=M.t+g*i+(g-bh)/2,on=x.계열===SEL;
+  const w1=x.양성/mx*iw,w2=x.매칭/mx*iw;
+  if(w1>0){const p=el("rect",{x:M.l,y,width:w1,height:bh,rx:3,fill:"var(--c2)",opacity:on?1:.72});
+   hov(p,`<b>${x.계열}</b><br>양성 ${x.양성}개`);s.appendChild(p);}
+  if(w2>0){const p=el("rect",{x:M.l+w1+2,y,width:w2,height:bh,rx:3,fill:"var(--c1)",opacity:on?1:.72});
+   hov(p,`<b>${x.계열}</b><br>수요·매칭 ${x.매칭}개`);s.appendChild(p);}
+  s.appendChild(T("text",{x:M.l-9,y:y+bh/2+4,"text-anchor":"end",class:on?"vlb":"vl"},x.계열));
+  s.appendChild(T("text",{x:M.l+Math.max(w1+w2,4)+9,y:y+bh/2+4,class:on?"vlb":"vl"},
+   x.이탈률!=null?`이탈 ${x.이탈률}%`:"—"));});
+ s.appendChild(T("text",{x:M.l,y:M.t-4,class:"vl"},"■ 양성"));
+ s.appendChild(T("text",{x:M.l+54,y:M.t-4,class:"vl"},"■ 수요·매칭"));
+ s.children[s.children.length-2].setAttribute("fill","var(--c2)");
+ s.children[s.children.length-1].setAttribute("fill","var(--c1)");
+ document.getElementById("polNote").innerHTML=
+  `계열이 명시된 <span class="key">32개 사업 중 양성이 ${D.meta.양성계}개, 수요·매칭은 ${D.meta.매칭계}개</span>다.
+   나머지 ${D.meta.전계열}개는 계열을 가리지 않는 사업(주거·복지·참여 등)이다.
+   예산으로 보면 <span class="key">교육 ${D.meta.예산교육}% · 일자리 ${D.meta.예산일자리}%</span>인데,
+   교육 예산의 ${D.meta.국비교육}%가 국비다(일자리는 ${D.meta.국비일자리}%).
+   <span class="key">부산시 진단이라기보다 중앙 공모사업 구조의 결과</span>일 수 있다.`;}
+
+function space(){const s=document.getElementById("cSpace");s.innerHTML="";
+ const W=900,H=360,M={t:20,r:120,b:34,l:78},d=D.space;
+ const iw=W-M.l-M.r,ih=H-M.t-M.b,n=d.labels.length,g=ih/n,bh=Math.min(g*.46,13);
+ const mx=Math.max(...d.밀도), rx=Math.max(...d.유입비);
+ [0,50,100,150,200,250,300].forEach(v=>{const x=M.l+iw/mx*v;
+  if(x>W-M.r)return;
+  s.appendChild(el("line",{x1:x,x2:x,y1:M.t,y2:M.t+ih,stroke:"var(--grid)"}));
+  s.appendChild(T("text",{x,y:H-12,"text-anchor":"middle",class:"ax"},v));});
+ d.labels.forEach((lab,i)=>{const y=M.t+g*i;
+  const w1=d.밀도[i]/mx*iw, w2=d.유입비[i]/rx*iw*0.42;
+  const p=el("rect",{x:M.l,y:y+1,width:Math.max(w1,1.5),height:bh,rx:3,fill:"var(--c1)",opacity:.85});
+  hov(p,`<b>${lab}</b><br>청년 ${f(d.청년인구[i])}명 · 대졸신입 ${d.대졸신입[i]}건<br>1만명당 ${d.밀도[i]}건`);
+  s.appendChild(p);
+  const q=el("rect",{x:M.l,y:y+bh+3,width:Math.max(w2,1.5),height:bh*0.62,rx:2,fill:"var(--c2)",opacity:.7});
+  hov(q,`<b>${lab}</b><br>청년유입비 ${d.유입비[i]}<br>남 ${d.남성유입[i]} · 여 ${d.여성유입[i]}${d.산단고용[i]?`<br>산단 고용 ${f(d.산단고용[i])}명`:""}`);
+  s.appendChild(q);
+  s.appendChild(T("text",{x:M.l-9,y:y+bh+2,"text-anchor":"end",class:i<3?"vlb":"vl"},lab));
+  s.appendChild(T("text",{x:M.l+Math.max(w1,w2)+8,y:y+bh+2,class:i<3?"vlb":"vl"},d.밀도[i]));});
+ document.getElementById("spNote").innerHTML=
+  `<span class="key">강서구 281.6건 ↔ 서구 22.0건 — 13배 차이</span>다. 부산 평균은 청년 1만명당 48.1건.
+   청년이 가장 많이 사는 부산진구(28,348명)는 31.0건으로 평균 이하다.
+   <span class="key">184개 행정동 중 청년이 「일하러 오는」 곳은 4개뿐</span>이다.<br><br>
+   일자리가 가장 많은 강서구는 <span class="key">남성 유입비가 여성의 2배</span>(0.44 vs 0.23)다.
+   산단 고용 61,836명이 몰린 제조 중심 지역이고, 부산 제조업 공장 11,548개 중
+   <span class="key">조선·금속가공이 28.9%, 전자·정밀·바이오는 1.4%</span>다.<br><br>
+   ⚠ 생활인구는 통신 기지국 신호 추정치(평일 09~18시 30% 이상 체류)다. 유입비는
+   <span class="key">절대 수준이 아니라 시군구 간 순위로만</span> 읽는다. 공고와 9개월 시차가 있다.`;}
+
+function draw(){cards();map();tbl();pol();space();}
+draw();
+</script>

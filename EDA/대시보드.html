@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>부산 청년유출 대시보드</title>
+<style>
+:root{
+  --bg:#fcfcfb; --card:#ffffff; --ink:#1a1a19; --ink2:#55544f; --ink3:#8a8880;
+  --line:#e6e4de; --line2:#d4d1c9;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#7d5bd6;
+  --mute:#c6c3bb; --mute2:#b0ada4;
+  --hi:#fff3e8; --hiline:#eb6834;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141413; --card:#1a1a19; --ink:#f2f0ea; --ink2:#b4b1a8; --ink3:#88857d;
+    --line:#2e2d2a; --line2:#3d3b37;
+    --c1:#5a93e0; --c2:#dd6b34; --c3:#1fae7d; --c4:#8a6bd8;
+    --mute:#4a4842; --mute2:#5d5a53;
+    --hi:#2a211a; --hiline:#dd6b34;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141413; --card:#1a1a19; --ink:#f2f0ea; --ink2:#b4b1a8; --ink3:#88857d;
+  --line:#2e2d2a; --line2:#3d3b37;
+  --c1:#5a93e0; --c2:#dd6b34; --c3:#1fae7d; --c4:#8a6bd8;
+  --mute:#4a4842; --mute2:#5d5a53;
+  --hi:#2a211a; --hiline:#dd6b34;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
+header{margin-bottom:28px}
+.kicker{font-size:12px;letter-spacing:.08em;color:var(--ink3);font-weight:600;margin-bottom:10px}
+h1{font-size:clamp(22px,3.6vw,34px);line-height:1.3;margin:0 0 14px;letter-spacing:-.02em;font-weight:700}
+h1 em{font-style:normal;color:var(--c2)}
+.q{font-size:15px;color:var(--ink2);max-width:64ch;margin:0 0 22px}
+.q b{color:var(--ink);font-weight:600}
+.hero{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;flex:1 1 200px}
+.stat .n{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.stat .n.a{color:var(--c2)} .stat .n.b{color:var(--c1)} .stat .n.c{color:var(--c3)}
+.stat .t{font-size:12.5px;color:var(--ink2);margin-top:6px}
+.ins{background:var(--hi);border:1px solid var(--line);border-left:3px solid var(--hiline);
+  border-radius:10px;padding:14px 16px;margin:22px 0 0;font-size:14px}
+.ins h4{margin:0 0 5px;font-size:12px;letter-spacing:.06em;color:var(--ink3);font-weight:700}
+.ins p{margin:0;color:var(--ink)}
+.ins p+p{margin-top:8px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px 18px;margin-top:16px}
+section>h2{font-size:17px;margin:0 0 4px;letter-spacing:-.01em;font-weight:700}
+section>.sub{font-size:13px;color:var(--ink2);margin:0 0 16px;max-width:72ch}
+.grid2{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:860px){.grid2{grid-template-columns:1fr 1fr}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 12px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:3px;display:block}
+.note{font-size:11.5px;color:var(--ink3);margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.ax{font-size:11px;fill:var(--ink3)}
+.lb{font-size:12px;fill:var(--ink2)}
+.vl{font-size:11.5px;fill:var(--ink2);font-variant-numeric:tabular-nums}
+.vl.on{fill:var(--ink);font-weight:600}
+.gl{stroke:var(--line);stroke-width:1}
+.zero{stroke:var(--line2);stroke-width:1.5}
+.bar{transition:opacity .12s}
+.bar:hover{opacity:.78;cursor:default}
+.tog{background:none;border:1px solid var(--line2);color:var(--ink2);border-radius:7px;
+  padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+.tog:hover{color:var(--ink);border-color:var(--ink3)}
+.thead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 9px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink3);font-weight:600;font-size:11.5px;white-space:nowrap}
+.scroll{overflow-x:auto}
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:50;
+  background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 11px;font-size:12px;
+  line-height:1.5;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+#tip b{font-weight:700}
+#tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+footer{margin-top:28px;font-size:11.5px;color:var(--ink3);line-height:1.75}
+footer b{color:var(--ink2);font-weight:600}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font-size:11px;color:var(--ink3);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <div class="kicker">BOAZ 27기 1차 프로젝트 · DX CHALLENGE 2026</div>
+  <h1>부산 청년은 왜 떠나는가 —<br>자리가 없어서인가, <em>갈 만한 자리</em>가 없어서인가?</h1>
+  <p class="q">부산 청년이 <b>일자리 때문에</b> 떠난다는 건 이미 알려져 있다.
+  부산시가 시민 31,144명에게 물었더니 이주 이유 1위가 <b>구직·취업·직장 66.5%</b>였고,
+  부산연구원도 순유출 요인 1순위로 직업을 꼽았다. <b>우리 질문은 그 다음이다.</b>
+  부산은 해마다 4년제 졸업생 <b>3만 6천명</b>을 배출하는데,
+  「일자리가 부족하다」로 설명하려 하면 데이터가 받쳐주지 않는다.
+  그래서 질문을 바꿨다 — <b>자리의 개수가 아니라 자리의 성격</b>을 본다.
+  직접 수집한 부산 채용공고 <b>25,135건</b>을 요구 학력·고용 형태·업종·지역으로 갈라
+  대졸 졸업생이 실제로 지원할 수 있는 자리가 어디에 얼마나 있는지 셌다.</p>
+
+  <div class="hero">
+    <div class="stat"><div class="n a">3.2%</div>
+      <div class="t">대졸 · 신입 · 정규직을 모두 만족하는 공고<br>25,135건 중 <b>816건</b></div></div>
+    <div class="stat"><div class="n b">90.8%</div>
+      <div class="t">4년제 졸업을 요구하지 <b>않는</b> 공고<br>절반 이상(59.7%)은 학력을 아예 안 본다</div></div>
+    <div class="stat"><div class="n c">37.7<span style="font-size:.5em">만원</span></div>
+      <div class="t">부산에 남은 사람과 수도권으로 간 사람의<br>월소득 차이 (주거비를 빼도 93~99% 남는다)</div></div>
+  </div>
+
+  <div class="ins">
+    <h4>이 대시보드가 찾아낸 것</h4>
+    <p><b>① 부산에 일자리가 없는 게 아니다. 대졸이 갈 자리가 없다.</b>
+      공고 수가 가장 많은 강서구(3,839건)는 정규직 비율도 84.7%로 가장 높지만,
+      대졸을 요구하는 비율은 10.3%에 그친다. 많은 자리가 대졸을 부르지 않는다.</p>
+    <p><b>② 대졸을 부르는 업종이 가장 불안정하다.</b>
+      대졸 요구 비율 1위인 교육(45.1%)은 정규직 비율이 55.7%로 최저권이다.
+      반대로 정규직 비율이 높은 제조(88.9%)·보건의료(88.2%)는 대졸 요구가 각각 12.3%·5.1%다.
+      <b>안정과 학력이 같은 자리에 있지 않다.</b></p>
+  </div>
+</header>
+
+<section>
+  <h2>① 공급 — 부산은 해마다 3만 6천명을 배출한다</h2>
+  <p class="sub">부산 소재 4년제 졸업생을 12개 계열로 묶었다. 이 칸은 도입부다. 여기서 「너무 많다」고 말하지 않는다.</p>
+  <div class="thead"><div class="legend"><span><i class="sw" style="background:var(--c1)"></i>계열별 졸업생 수</span></div>
+    <button class="tog" data-t="t-grad">표로 보기</button></div>
+  <div id="c-grad"></div>
+  <div id="t-grad" hidden class="scroll"></div>
+  <p class="note">출처 — 대학알리미, 부산 소재 4년제. 계열 구분은 학과를 6자리 직업코드로 옮긴 뒤 묶은 것이다.</p>
+</section>
+
+<section>
+  <h2>② 수요의 성격 — 부산 공고의 90.8%는 대졸을 찾지 않는다</h2>
+  <p class="sub">채용공고 25,135건을 「어떤 학력을 요구하는가」로 갈랐다.
+  졸업생이 실제로 지원할 수 있는 자리를 세 겹으로 좁혀 들어가면 전체의 3.2%가 남는다.</p>
+  <div class="grid2">
+    <div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--c1)"></i>4년제 이상 요구</span>
+        <span><i class="sw" style="background:var(--mute2)"></i>그 외</span></div>
+      <div id="c-edu"></div>
+      <div id="c-funnel" style="margin-top:22px"></div>
+    </div>
+    <div>
+      <div class="thead"><div class="legend">
+        <span><i class="sw" style="background:var(--c1)"></i>4년제 이상</span>
+        <span><i class="sw" style="background:var(--c4)"></i>전문대</span>
+        <span><i class="sw" style="background:var(--mute2)"></i>고졸 이하</span>
+        <span><i class="sw" style="background:var(--mute)"></i>학력 안 봄·미기재</span></div>
+        <button class="tog" data-t="t-occ">표로 보기</button></div>
+      <div id="c-occ"></div>
+      <div id="t-occ" hidden class="scroll"></div>
+    </div>
+  </div>
+  <p class="note"><b>꼭 같이 읽을 것</b> — 「학력 안 봄」(59.7%)은 대졸에게 <b>열려 있지만 대졸이라서 더 주지는 않는</b> 자리다.
+  그래서 「대졸이 갈 자리가 3.2%뿐」이 아니라 <b>「기업이 대졸이라는 점에 값을 매기는 자리가 3.2%」</b>라고 읽어야 한다.
+  출처 — 직접 수집한 부산 채용공고 25,135건(2026년 9월 7일 기준 모집 중이던 공고).</p>
+</section>
+
+<section>
+  <h2>③ 전공과 채용의 어긋남 — 어긋나는 모양은 계열마다 다르다</h2>
+  <p class="sub">졸업생이 차지하는 비율에서 공고가 차지하는 비율을 뺐다.
+  오른쪽으로 뻗을수록 <b>배출은 많은데 자리가 적은</b> 쪽, 왼쪽으로 뻗을수록 <b>자리는 있는데 배출이 적은</b> 쪽이다.</p>
+  <div class="thead"><div class="legend">
+      <span><i class="sw" style="background:var(--c1)"></i>배출 &gt; 자리</span>
+      <span><i class="sw" style="background:var(--c2)"></i>자리 &gt; 배출</span></div>
+    <button class="tog" data-t="t-mm">표로 보기</button></div>
+  <div id="c-mm"></div>
+  <div id="t-mm" hidden class="scroll"></div>
+  <p class="note"><b>기간이 다르다</b> — 졸업생은 1년 동안 나온 수, 공고는 수집한 날 올라와 있던 수다.
+  그래서 개수는 비교하지 않고 <b>비율만</b> 비교했고, 「몇 배」라는 표현은 쓰지 않는다.
+  기준을 바꿔 114가지로 다시 재본 결과 배율은 0.84배에서 3.95배까지 흔들렸다.</p>
+</section>
+
+<section>
+  <h2>④ 대졸을 부르는 업종이 가장 불안정하다</h2>
+  <p class="sub">가로축은 그 업종이 대졸을 요구하는 비율, 세로축은 정규직 비율이다.
+  <b>오른쪽 위에 있어야 대졸이 갈 만한 자리</b>인데, 거기 놓인 업종은 IT 하나뿐이고 그마저 공고가 541건(전체의 2.2%)이다.</p>
+  <div class="grid2">
+    <div>
+      <div class="thead"><div class="legend"><span><i class="sw" style="background:var(--c1);border-radius:50%"></i>업종 (원 크기 = 공고 수)</span></div>
+        <button class="tog" data-t="t-ind">표로 보기</button></div>
+      <div id="c-ind"></div>
+      <div id="t-ind" hidden class="scroll"></div>
+    </div>
+    <div>
+      <div class="thead"><div class="legend">
+        <span><i class="sw" style="background:var(--c1)"></i>공고 수</span>
+        <span><i class="sw" style="background:var(--c2)"></i>대졸 요구 비율</span></div>
+        <button class="tog" data-t="t-gu">표로 보기</button></div>
+      <div id="c-gu"></div>
+      <div id="t-gu" hidden class="scroll"></div>
+    </div>
+  </div>
+  <p class="note"><b>업종을 모르는 공고가 31.6%</b>다(그래프에서 제외). 업종 구성은 비교용이며 <b>순위는 주장하지 않는다</b>.
+  구·군 그래프에서는 지역을 모르는 1,935건을 뺐다.
+  청년 1만명당 대졸 신입 공고는 강서구 281.6 ↔ 부산진구 31.0 ↔ 서구 22.0으로,
+  <b>자리가 있는 구와 청년이 사는 구가 다르다</b>.</p>
+</section>
+
+<section>
+  <h2>⑤ 그래서 떠난다 — 남으면 월 37.7만원을 덜 받는다</h2>
+  <p class="sub">정부가 대학 졸업생을 졸업 후까지 추적하는 조사(2016~2019년 졸업생)로
+  계열별로 얼마나 떠났는지, 남은 사람과 떠난 사람의 소득이 얼마나 다른지 봤다.</p>
+  <div class="grid2">
+    <div>
+      <div class="thead"><div class="legend"><span><i class="sw" style="background:var(--c2)"></i>부산을 떠난 비율</span></div>
+        <button class="tog" data-t="t-exit">표로 보기</button></div>
+      <div id="c-exit"></div>
+      <div id="t-exit" hidden class="scroll"></div>
+    </div>
+    <div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--mute2)"></i>부산에 남은 사람</span>
+        <span><i class="sw" style="background:var(--c2)"></i>떠난 사람</span>
+        <span style="color:var(--ink3)">진한 선 = 차이가 통계적으로 확인된 계열</span></div>
+      <div id="c-dumb"></div>
+    </div>
+  </div>
+  <p class="note"><b>다른 자료와 맞춰봤다</b> — 한국은행 부산본부가 2012년에 잰 값은
+  「부산 대졸자 평균연봉이 서울보다 <b>연 약 500만원</b> 낮다」였다.
+  우리 값 월 37.7만원을 연으로 바꾸면 <b>452만원</b>이다.
+  같은 보고서의 부산 대학 출신 지역 잔존율 61.5%도 우리 계열 평균(약 60% 잔류)과 거의 같다.
+  <b>13년 차이, 다른 자료, 다른 방법인데 같은 크기가 나온다.</b></p>
+  <p class="note" style="border-top:none;padding-top:0"><b>자리의 개수로는 설명되지 않는다</b> — 「자리가 적은 계열일수록 더 떠난다」면
+  떠난 비율과 자리 여유가 반대로 움직여야 하는데, 계열을 묶는 방식 4가지 모두에서 같은 방향으로 움직였고
+  <b>넷 다 우연일 확률이 9~50%</b>로 인정 기준(5%)을 넘었다.
+  그래서 「자리가 많아서 떠난다」고도 말하지 않는다. <b>개수로는 설명할 수 없다</b>까지가 데이터가 허락하는 말이다.</p>
+  <p class="note" style="border-top:none;padding-top:0"><b>그런데 이 37.7만원만으로는 아직 결론이 못 된다.</b>
+  덜 버는 만큼 나가는 돈도 적다면 상쇄되기 때문이다. 그래서 다음 칸에서 주거비를 직접 재봤다. ↓</p>
+</section>
+
+<section>
+  <h2>⑥ 덜 받아도 주거비가 싸면 상쇄되는 것 아닌가 — 실제로 재봤다</h2>
+  <p class="sub"><b>⑤의 「월 37.7만원」은 그 자체로는 결론이 못 된다.</b>
+  부산에 남아 37.7만원을 덜 벌더라도 <b>매달 나가는 고정 지출이 그만큼 적다면 손에 남는 돈은 같다.</b>
+  실제로 「부산은 집값이 싸잖아」는 이 분석에 가장 자주 나오는 반론이고,
+  <b>임금 격차 주장을 통째로 무너뜨릴 수 있는 거의 유일한 반론</b>이다. 그래서 직접 재봤다.
+  고정 지출 중 가장 큰 항목인 <b>주거비</b>를 소득에서 빼고 다시 비교했다.</p>
+
+  <div class="grid2">
+    <div>
+      <div class="legend"><span style="color:var(--ink2)">부산에 남은 사람 대비 수도권으로 간 사람 (혼자 살거나 분가한 사람 기준)</span></div>
+      <div id="c-offset"></div>
+      <div style="margin-top:18px">
+        <div class="legend">
+          <span><i class="sw" style="background:var(--c1)"></i>주거비를 빼고 남는 소득</span>
+          <span><i class="sw" style="background:var(--c2)"></i>월 주거비</span></div>
+        <div id="c-hou"></div>
+      </div>
+    </div>
+    <div class="ins" style="margin:0">
+      <h4>답 — 상쇄되지 않는다</h4>
+      <p>부산 청년이 실제로 내는 주거비는 수도권 청년과 <b>거의 같다</b>.
+      혼자 사는 사람끼리 비교하면 부산 34.9만원 vs 수도권 37.5만원으로 차이가 <b>월 2.6만원</b>,
+      보증금 있는 월세만 보면 <b>월 0.5만원</b>이다.
+      상쇄되는 몫이 격차의 7%뿐이라 <b>93~99%가 그대로 남는다.</b></p>
+      <p><b>왜 안 싼가</b> — 지역 평균 집값은 부산이 훨씬 싸다. 그런데
+      <b>청년이 사는 집은 지역 평균 주택이 아니라 직장에 갈 수 있는 소형 임대</b>이고,
+      그 가격대는 지역 차가 작다.</p>
+      <p>오히려 부산에 남은 사람은 <b>소득에서 주거비가 차지하는 비중이 더 높다</b>
+      (16.2% vs 14.8%, 월세만 보면 21.2% vs 17.5%). 분모인 소득이 작기 때문이다.</p>
+      <p><b>주거비는 부산의 강점이 아니다 — 분자가 아니라 분모가 문제다.</b></p>
+    </div>
+  </div>
+  <p class="note"><b>어떻게 쟀나</b> — 지역 평균 전월세가를 갖다 붙이지 않고,
+  <b>같은 사람에게 소득과 주거비를 함께 물어본</b> 조사 항목을 썼다.
+  부모집에 사는 사람이 섞이면 값이 왜곡되므로(부산에 남은 사람은 부모집 거주가 22.3%, 수도권은 6.2%)
+  <b>혼자 살거나 분가한 사람만</b> 비교했다 — 부산 366명, 수도권 238명, 그 외 지역 200명.
+  주거비를 물어본 2018·2019년 졸업생만 대상이다.<br>
+  <b>국가 지표와의 관계</b> — 소득 대비 임대료 비율(RIR)은 수도권이 20% 안팎, 지방 광역시가 15% 안팎으로
+  <b>수도권 부담이 더 크다고 나온다</b>. 이는 <b>모든 가구의 중위값</b>이라 가족 단위의 넓은 집이 섞인 값이고,
+  <b>혼자 사는 대졸 청년의 소형 임대</b>는 지역 차가 훨씬 작다. 두 수치는 재는 대상이 다르다.</p>
+</section>
+
+<section>
+  <h2>⑦ 이미 알려진 것과, 우리가 더한 것</h2>
+  <p class="sub">부산 청년 유출은 이미 여러 기관이 분석했다.
+  <b>결론이 겹치는지 먼저 맞춰보고</b>, 그다음 우리가 어디를 더 들어갔는지 적는다.</p>
+
+  <div class="grid2">
+    <div>
+      <div class="legend"><span style="color:var(--ink2)"><b>먼저 — 기존 자료와 결론이 맞는지 대조</b></span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>항목</th><th>기존 자료</th><th>우리 결과</th></tr></thead>
+        <tbody>
+          <tr><td>유출 사유 1위</td><td>직업 66.5%<br><span style="color:var(--ink3)">부산시 2024</span></td><td>직업 54.7%<br><span style="color:var(--ink3)">전입신고 사유 분해</span></td></tr>
+          <tr><td>순유입 요인</td><td>교육 &gt; 주거환경<br><span style="color:var(--ink3)">부산연구원 2022</span></td><td>교육 +3,479<br>주거환경 +915</td></tr>
+          <tr><td>연령</td><td>25~29세 최다<br><span style="color:var(--ink3)">부산연구원</span></td><td>25-29세 순유출률<br>전국 2위</td></tr>
+          <tr><td>임금 격차</td><td>연 약 500만원<br><span style="color:var(--ink3)">한국은행 2012</span></td><td><b>연 452만원</b><br><span style="color:var(--ink3)">월 37.7 × 12</span></td></tr>
+          <tr><td>지역 잔존율</td><td>61.5%<br><span style="color:var(--ink3)">한국은행 2012</span></td><td>약 60%<br><span style="color:var(--ink3)">계열 평균</span></td></tr>
+        </tbody></table></div>
+      <p class="note" style="border-top:none;padding-top:10px"><b>다섯 항목 모두 맞는다.</b>
+      우리 수치가 튀는 값이 아니라는 뜻이고, 그래서 그 위에 쌓은 결론도 믿을 수 있다.</p>
+    </div>
+
+    <div>
+      <div class="legend"><span style="color:var(--ink2)"><b>그다음 — 기존 자료가 멈춘 자리</b></span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>기존 자료가 멈춘 곳</th><th>우리가 한 것</th></tr></thead>
+        <tbody>
+          <tr><td>「일자리가 부족하다」</td><td><b>자리의 개수로는 설명되지 않는다</b>를 확인<br><span style="color:var(--ink3)">4가지 계산 전부 우연일 확률 9~50%</span></td></tr>
+          <tr><td>「양질의 일자리가 없다」<br><span style="color:var(--ink3)">— 「양질」의 정의가 없다</span></td><td><b>요구 학력·고용 형태·임금으로 쪼갬</b><br><span style="color:var(--ink3)">→ 대졸·신입·정규직 3.2%</span></td></tr>
+          <tr><td>사유를 7개 범주로만 봄</td><td>공고 25,135건을 <b>6자리 직업코드</b>로 분류해<br>계열별로 어디가 어긋나는지 확인</td></tr>
+          <tr><td>시·도 단위</td><td><b>16개 구·군</b>까지 내려감<br><span style="color:var(--ink3)">자리는 강서구, 청년은 부산진구</span></td></tr>
+          <tr><td>「주거비가 싸다/아니다」 주장만<br><span style="color:var(--ink3)">— 근거 수치 없음</span></td><td><b>같은 사람의 소득과 주거비를 함께 측정</b><br><span style="color:var(--ink3)">→ 상쇄되는 몫 7%</span></td></tr>
+        </tbody></table></div>
+    </div>
+  </div>
+
+  <div class="ins" style="border-left-color:var(--c1)">
+    <h4>한 줄로</h4>
+    <p><b>기존 자료는 「왜 떠나는가」에 답했다. 우리는 「그 일자리의 무엇이 문제인가」에 답한다.</b></p>
+  </div>
+
+  <p class="note"><b>아직 확인할 것</b> — 위 기존 자료 수치는 <b>언론 보도와 기관 요약</b>에서 확인한 것이다.
+  포스터에 인용하기 전에 원문 보고서를 받아 쪽수까지 대조해야 한다.<br>
+  <b>같이 볼 것</b> — 부산연구원은 <b>성별로 사유가 갈린다</b>고 했다(2016~2020 누적).
+  남성은 직업 24,966명이 1위인데 <b>여성은 가족 13,727명이 1위이고 직업은 2,550명으로 3위</b>다.
+  이 대시보드에는 넣지 않았지만 우리 성별 분석과 붙일 재료다.</p>
+</section>
+
+<section style="border-left:3px solid var(--c3)">
+  <h2>그래서 무엇을 하자는 것인가 — 「더 키우기」가 아니라 「첫 1년 버티기」</h2>
+  <p class="sub">부산 청년정책 109개 중 대상 계열이 적힌 32개가
+  <b>인재 키우기 22건 : 일자리 연결 3건</b>으로 기울어 있다.
+  떠난 비율 1·2위인 물류·운송(57.6%)과 기계·전기전자(56.0%)에는
+  <b>인재 키우기만 7건 붙어 있고 일자리 연결은 0건</b>이다.
+  정책이 붙는 기준이 떠나는 비율이 아니라 산업 육성 계획의 존재 여부다.</p>
+  <div class="tagrow">
+    <span class="tag">① 첫 1년 정착 지원을 인재 키우기 예산에서 옮겨온다</span>
+    <span class="tag">② 부산진구 월세 지원보다 강서구로 갈 수 있게 하는 것(교통·기숙)이 먼저다</span>
+    <span class="tag">③ 대졸을 부르는 업종(교육·IT)에 고용 안정성 조건을 건다</span>
+  </div>
+</section>
+
+<footer>
+  <b>출처</b> · 채용공고 25,135건 — 직접 수집(2026년 9월 7일 기준 모집 중이던 공고), 직업은 고용노동부 6자리 직업코드로 분류<br>
+  <b>·</b> 졸업생 — 대학알리미(교육부) 부산 소재 고등교육기관 졸업자 취업통계 2024 &nbsp;|&nbsp; 소득·떠난 비율 — 한국고용정보원 대졸자직업이동경로조사(2016·2017·2018·2019년 졸업생 합산, 부산 6,579명)<br>
+  <b>·</b> 주거비 — 위 조사 중 주거비 항목이 있는 2018·2019년 졸업생 &nbsp;|&nbsp; 구인 — 고용24(워크넷) 부산 2025.08~2026.07 &nbsp;|&nbsp; 생활인구 — 부산 데이터오픈랩 Big-데이터웨이브<br>
+  <b>한계</b> · 졸업생은 1년치, 공고는 한 시점의 게재분이라 개수는 비교하지 않고 비율만 비교했다.
+  업종을 모르는 공고 31.6%, 직업을 못 정한 공고 4.8%. 업종·지역 구성은 비교용이며 순위는 주장하지 않는다.<br>
+  <b>기존 자료</b> · 부산시 시민 조사(2024, 31,144명) · 부산연구원 「부산 청년인구 유출입 특성과 청년인구 유지 방안」(2022)<br>
+  <b>·</b> 한국은행 부산본부 「부산지역 청년층 인재유출 현상과 정책과제」(2012) · 통계청 국내인구이동통계(2025)<br>
+  <b>·</b> 이 화면은 <b>설계 시안</b>이다. 최종 제출물은 같은 데이터로 Tableau에서 만든다.
+</footer>
+</div>
+<div id="tip"></div>
+
+<script>window.__DASH__={"edu_total": {"학력 안 봄": 59.7, "전문대 졸업": 14.4, "고졸 이하": 10.8, "4년제 이상": 9.2, "적지 않음": 5.9}, "funnel": [{"라벨": "부산 채용공고 전체", "값": 25135, "비율": 100.0}, {"라벨": "4년제 이상을 요구", "값": 2315, "비율": 9.2}, {"라벨": "+ 신입도 지원 가능", "값": 1070, "비율": 4.3}, {"라벨": "+ 정규직", "값": 816, "비율": 3.2}], "edu_occ": [{"직업": "경영·사무·금융·보험", "공고수": 5891, "대졸이상": 11.6, "전문대졸": 14.8, "고졸이하": 13.1, "학력무관": 53.0, "미기재": 7.4}, {"직업": "미용·여행·숙박·음식·경비·돌봄·청소", "공고수": 3815, "대졸이상": 0.6, "전문대졸": 3.5, "고졸이하": 6.0, "학력무관": 86.6, "미기재": 3.3}, {"직업": "설치·정비·생산", "공고수": 3812, "대졸이상": 2.1, "전문대졸": 5.2, "고졸이하": 14.6, "학력무관": 74.2, "미기재": 3.9}, {"직업": "보건·의료", "공고수": 3214, "대졸이상": 5.4, "전문대졸": 36.5, "고졸이하": 13.8, "학력무관": 43.3, "미기재": 1.1}, {"직업": "영업·판매·운전·운송", "공고수": 2673, "대졸이상": 8.1, "전문대졸": 10.5, "고졸이하": 11.0, "학력무관": 60.8, "미기재": 9.6}, {"직업": "연구·공학기술", "공고수": 2162, "대졸이상": 21.1, "전문대졸": 20.5, "고졸이하": 7.7, "학력무관": 42.7, "미기재": 8.0}, {"직업": "교육·법률·사회복지·경찰·소방·군인", "공고수": 1385, "대졸이상": 36.7, "전문대졸": 17.9, "고졸이하": 2.7, "학력무관": 40.7, "미기재": 1.9}, {"직업": "미분류", "공고수": 1206, "대졸이상": 8.0, "전문대졸": 12.9, "고졸이하": 11.8, "학력무관": 47.1, "미기재": 20.1}, {"직업": "예술·디자인·방송·스포츠", "공고수": 839, "대졸이상": 8.5, "전문대졸": 12.5, "고졸이하": 6.9, "학력무관": 67.1, "미기재": 5.0}, {"직업": "건설·채굴", "공고수": 76, "대졸이상": 5.3, "전문대졸": 5.3, "고졸이하": 14.5, "학력무관": 71.1, "미기재": 3.9}, {"직업": "농림어업", "공고수": 62, "대졸이상": 1.6, "전문대졸": 4.8, "고졸이하": 6.5, "학력무관": 77.4, "미기재": 9.7}], "mismatch": [{"직업": "경영·사무·금융·보험", "졸업생": 28.5, "공고": 24.6, "차이": 3.9}, {"직업": "연구·공학기술", "졸업생": 18.9, "공고": 9.0, "차이": 9.8}, {"직업": "보건·의료", "졸업생": 14.1, "공고": 13.4, "차이": 0.7}, {"직업": "교육·법률·사회복지·경찰·소방", "졸업생": 13.8, "공고": 5.8, "차이": 8.0}, {"직업": "예술·디자인·방송·스포츠", "졸업생": 13.2, "공고": 3.5, "차이": 9.7}, {"직업": "설치·정비·생산", "졸업생": 6.8, "공고": 15.9, "차이": -9.1}, {"직업": "영업·판매·운전·운송", "졸업생": 2.2, "공고": 11.2, "차이": -9.0}, {"직업": "건설·채굴", "졸업생": 1.1, "공고": 0.3, "차이": 0.8}, {"직업": "미용·여행·숙박·음식·경비·돌봄·청소", "졸업생": 1.0, "공고": 15.9, "차이": -14.9}, {"직업": "농림어업", "졸업생": 0.4, "공고": 0.3, "차이": 0.2}], "industry": [{"업종": "제조", "공고수": 4770, "대졸": 12.3, "정규직": 88.9}, {"업종": "보건·의료·복지", "공고수": 3972, "대졸": 5.1, "정규직": 88.2}, {"업종": "유통·판매·무역", "공고수": 1707, "대졸": 8.5, "정규직": 87.2}, {"업종": "음식·숙박·여가", "공고수": 1680, "대졸": 2.8, "정규직": 84.7}, {"업종": "사업·전문서비스", "공고수": 1476, "대졸": 7.2, "정규직": 59.8}, {"업종": "건설·부동산", "공고수": 1174, "대졸": 9.0, "정규직": 68.4}, {"업종": "교육", "공고수": 942, "대졸": 45.1, "정규직": 55.7}, {"업종": "운수·물류", "공고수": 641, "대졸": 6.4, "정규직": 79.1}, {"업종": "IT·정보통신", "공고수": 541, "대졸": 21.4, "정규직": 85.0}, {"업종": "금융·보험", "공고수": 279, "대졸": 4.7, "정규직": 40.9}], "gu": [{"구": "강서구", "공고수": 3839, "정규직": 84.7, "대졸": 10.3, "만명당": 281.6}, {"구": "해운대구", "공고수": 2960, "정규직": 78.5, "대졸": 12.6, "만명당": 63.5}, {"구": "부산진구", "공고수": 2526, "정규직": 75.7, "대졸": 7.8, "만명당": 31.0}, {"구": "기장군", "공고수": 1749, "정규직": 80.5, "대졸": 8.2, "만명당": 62.9}, {"구": "사상구", "공고수": 1745, "정규직": 81.8, "대졸": 8.0, "만명당": 45.4}, {"구": "사하구", "공고수": 1476, "정규직": 78.4, "대졸": 6.5, "만명당": 25.2}, {"구": "동래구", "공고수": 1220, "정규직": 79.0, "대졸": 12.4, "만명당": 55.3}, {"구": "남구", "공고수": 1211, "정규직": 75.6, "대졸": 10.2, "만명당": 33.7}, {"구": "금정구", "공고수": 1101, "정규직": 78.2, "대졸": 7.8, "만명당": 30.2}, {"구": "연제구", "공고수": 1059, "정규직": 79.5, "대졸": 8.2, "만명당": 38.1}, {"구": "수영구", "공고수": 1039, "정규직": 78.2, "대졸": 8.7, "만명당": 30.9}, {"구": "동구", "공고수": 871, "정규직": 71.8, "대졸": 10.2, "만명당": 101.4}, {"구": "북구", "공고수": 807, "정규직": 78.1, "대졸": 9.0, "만명당": 24.1}, {"구": "중구", "공고수": 696, "정규직": 80.9, "대졸": 9.8, "만명당": 92.3}, {"구": "서구", "공고수": 459, "정규직": 66.4, "대졸": 4.8, "만명당": 22.0}, {"구": "영도구", "공고수": 442, "정규직": 77.1, "대졸": 7.7, "만명당": 35.3}], "exit": [{"계열": "물류·운송", "이탈": 57.6, "잔류소득": 227.1, "이탈소득": 286.9, "유의": true, "졸업자": 781}, {"계열": "기계·전기전자", "이탈": 56.0, "잔류소득": 211.0, "이탈소득": 266.0, "유의": true, "졸업자": 4927}, {"계열": "자연과학", "이탈": 48.0, "잔류소득": 186.2, "이탈소득": 241.1, "유의": true, "졸업자": 476}, {"계열": "IT·컴퓨터", "이탈": 46.4, "잔류소득": 208.9, "이탈소득": 238.8, "유의": false, "졸업자": 1917}, {"계열": "인문·어학", "이탈": 41.1, "잔류소득": 202.9, "이탈소득": 217.5, "유의": true, "졸업자": 3312}, {"계열": "건설·토목", "이탈": 41.1, "잔류소득": 206.6, "이탈소득": 260.6, "유의": true, "졸업자": 1335}, {"계열": "디자인·예술", "이탈": 37.7, "잔류소득": 174.9, "이탈소득": 187.1, "유의": false, "졸업자": 4390}, {"계열": "경영·사무", "이탈": 37.1, "잔류소득": 214.0, "이탈소득": 230.8, "유의": false, "졸업자": 10350}, {"계열": "교육", "이탈": 33.6, "잔류소득": 192.1, "이탈소득": 208.2, "유의": false, "졸업자": 1593}, {"계열": "생활과학·화학", "이탈": 32.9, "잔류소득": 178.5, "이탈소득": 211.1, "유의": true, "졸업자": 2843}, {"계열": "보건·의료", "이탈": 32.6, "잔류소득": 244.0, "이탈소득": 257.1, "유의": false, "졸업자": 4281}], "grad": [{"계열": "경영·사무", "졸업자": 10350}, {"계열": "기계·전기전자", "졸업자": 4927}, {"계열": "디자인·예술", "졸업자": 4390}, {"계열": "보건·의료", "졸업자": 4281}, {"계열": "인문·어학", "졸업자": 3312}, {"계열": "생활과학·화학", "졸업자": 2843}, {"계열": "IT·컴퓨터", "졸업자": 1917}, {"계열": "교육", "졸업자": 1593}, {"계열": "건설·토목", "졸업자": 1335}, {"계열": "물류·운송", "졸업자": 781}, {"계열": "자연과학", "졸업자": 476}, {"계열": "농림·수산", "졸업자": 151}], "housing": [{"구분": "부산 잔류", "소득": 215.6, "주거비": 34.9, "실질": 180.7, "n": 366}, {"구분": "수도권 이탈", "소득": 253.5, "주거비": 37.5, "실질": 216.0, "n": 238}, {"구분": "그 외 지역", "소득": 265.4, "주거비": 37.9, "실질": 227.5, "n": 200}]};</script>
+<script>
+const D = window.__DASH__;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const W = 560;                                  // viewBox 기준 폭
+const PAD = s => Math.min(190, 9 + s.reduce((m,x)=>Math.max(m,x.length),0) * 12.2);
+const nf = n => n.toLocaleString('ko-KR');
+
+function svg(h, inner, w=W){
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" preserveAspectRatio="xMinYMin meet">${inner}</svg>`;
+}
+function tip(o){ return `data-tip="${esc(JSON.stringify(o))}"`; }
+
+/* ── 가로 막대 ───────────────────────────────────────── */
+function hbar(el, rows, o={}){
+  const L = PAD(rows.map(r=>r.k)), RG = o.suffix ? 80 : 48, BW = W-L-RG;
+  const H = 26, top = 6, h = top + rows.length*H + 16;
+  const max = Math.max(...rows.map(r=>r.v));
+  let s = '';
+  rows.forEach((r,i)=>{
+    const y = top + i*H, w = Math.max(2, r.v/max*BW), c = r.color || 'var(--c1)';
+    s += `<text class="lb" x="${L-9}" y="${y+16}" text-anchor="end">${esc(r.k)}</text>`;
+    s += `<rect class="bar" x="${L}" y="${y+4}" width="${w}" height="16" rx="4" fill="${c}" ${tip(r.tip||{제목:r.k})}/>`;
+    s += `<text class="vl ${i<(o.labelTop??99)?'on':''}" x="${L+w+7}" y="${y+16}">${o.fmt?o.fmt(r.v):nf(r.v)}</text>`;
+  });
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 100% 누적 막대 (한 줄) ──────────────────────────── */
+function stack1(el, segs, o={}){
+  const h = 116, BW = W, y = 18;
+  let x = 0, s = `<text class="ax" x="0" y="10">전체 공고 25,135건이 요구하는 학력</text>`;
+  const pos = [];
+  segs.forEach((g,i)=>{
+    const w = g.v/100*BW;
+    s += `<rect class="bar" x="${x+(i?1:0)}" y="${y}" width="${Math.max(1,w-(i?1:0))}" height="32" rx="${i===0||i===segs.length-1?4:0}" fill="${g.color}" ${tip({항목:g.k,비율:g.v+'%'})}/>`;
+    s += `<text class="vl on" x="${x+w/2}" y="${y+21}" text-anchor="middle" fill="#fff">${g.v}%</text>`;
+    pos.push({k:g.k, cx:x+w/2, w:g.k.length*12.4+26});
+    x += w;
+  });
+  // 이름 라벨 — 겹치면 아랫줄로 내리고 연결선을 긋는다
+  let lastA = -1e9;
+  pos.forEach(p=>{
+    const rowA = p.cx - p.w/2 > lastA + 6;
+    const ly = rowA ? y+50 : y+72;
+    if (rowA) lastA = p.cx + p.w/2;
+    else s += `<line x1="${p.cx}" y1="${y+36}" x2="${p.cx}" y2="${ly-11}" stroke="var(--line2)" stroke-width="1"/>`;
+    const anchor = p.cx + p.w/2 > W ? 'end' : (p.cx - p.w/2 < 0 ? 'start' : 'middle');
+    const lx = anchor==='end' ? W : (anchor==='start' ? 0 : p.cx);
+    s += `<text class="lb" x="${lx}" y="${ly}" text-anchor="${anchor}">${esc(p.k)}</text>`;
+  });
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 깔때기 ──────────────────────────────────────────── */
+function funnel(el, rows){
+  const H = 52, h = rows.length*H + 24;
+  const shades = ['var(--mute2)','var(--c1)','var(--c1)','var(--c2)'];
+  const ops = [1,.55,.78,1];
+  let s = `<text class="ax" x="0" y="10">졸업생이 실제로 지원할 수 있는 자리로 좁혀 들어가면</text>`;
+  rows.forEach((r,i)=>{
+    const y = 22 + i*H, w = Math.max(96, Math.sqrt(r.비율/100)*W), x = (W-w)/2;
+    s += `<rect class="bar" x="${x}" y="${y}" width="${w}" height="34" rx="5" fill="${shades[i]}" opacity="${ops[i]}" ${tip({단계:r.라벨,공고수:nf(r.값)+'건',전체대비:r.비율+'%'})}/>`;
+    s += `<text class="vl on" x="${W/2}" y="${y+22}" text-anchor="middle" fill="#fff">${nf(r.값)}건 · ${r.비율}%</text>`;
+    s += `<text class="lb" x="${W/2}" y="${y+47}" text-anchor="middle">${esc(r.라벨)}</text>`;
+  });
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 직업별 학력 구성 (100% 누적) ────────────────────── */
+function stackRows(el, rows){
+  const L = PAD(rows.map(r=>r.k)), BW = W-L-46, H = 30, h = rows.length*H + 26;
+  const keys = [['대졸이상','var(--c1)'],['전문대졸','var(--c4)'],['고졸이하','var(--mute2)'],['학력무관','var(--mute)'],['미기재','var(--mute)']];
+  let s = '';
+  rows.forEach((r,i)=>{
+    const y = 6 + i*H;
+    s += `<text class="lb" x="${L-9}" y="${y+17}" text-anchor="end">${esc(r.k)}</text>`;
+    let x = L;
+    keys.forEach(([k,c],j)=>{
+      const w = (r[k]||0)/100*BW; if (w<=0) return;
+      s += `<rect class="bar" x="${x+(j?1:0)}" y="${y+4}" width="${Math.max(1,w-(j?1:0))}" height="17" rx="${j===0?4:0}" fill="${c}" ${tip({직업:r.k,항목:k==='학력무관'?'학력 안 봄':k,비율:(r[k]||0)+'%',공고수:nf(r.n)+'건'})}/>`;
+      x += w;
+    });
+    s += `<text class="vl on" x="${W}" y="${y+17}" text-anchor="end">${r['대졸이상']}%</text>`;
+  });
+  s += `<text class="ax" x="${L}" y="${h-4}">막대 왼쪽 끝 파란 구간 · 오른쪽 숫자 = 4년제 이상을 요구하는 비율</text>`;
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 좌우로 뻗는 막대 ───────────────────────────────── */
+function diverge(el, rows){
+  const L = PAD(rows.map(r=>r.k)), BW = W-L-8, mid = L + BW/2;
+  const H = 28, h = rows.length*H + 34;
+  const max = Math.max(...rows.map(r=>Math.abs(r.차이)));
+  let s = `<line class="zero" x1="${mid}" y1="2" x2="${mid}" y2="${h-26}"/>`;
+  rows.forEach((r,i)=>{
+    const y = 6 + i*H, w = Math.abs(r.차이)/max*(BW/2-34);
+    const pos = r.차이 >= 0, x = pos ? mid : mid-w, c = pos ? 'var(--c1)' : 'var(--c2)';
+    s += `<text class="lb" x="${L-9}" y="${y+17}" text-anchor="end">${esc(r.k)}</text>`;
+    s += `<rect class="bar" x="${x}" y="${y+4}" width="${Math.max(2,w)}" height="16" rx="4" fill="${c}" ${tip({직업:r.k,'졸업생 비율':r.졸업생+'%','공고 비율':r.공고+'%','차이':(pos?'+':'')+r.차이+'%p'})}/>`;
+    const inside = !pos && w > 38;
+    s += `<text class="vl on" x="${pos ? x+w+6 : (inside ? x+7 : x-6)}" y="${y+17}" text-anchor="${pos||inside?'start':'end'}"${inside?' fill="#fff"':''}>${pos?'+':''}${r.차이}</text>`;
+  });
+  s += `<text class="ax" x="${mid-8}" y="${h-6}" text-anchor="end">← 자리가 더 많다</text>`;
+  s += `<text class="ax" x="${mid+8}" y="${h-6}">배출이 더 많다 →</text>`;
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 점 그래프 ───────────────────────────────────────── */
+function scatter(el, pts){
+  const h = 368, l = 46, r = 14, t = 40, b = 44, PW = W-l-r, PH = h-t-b;
+  const xmax = 50, ymin = 30, ymax = 95;
+  const X = v => l + v/xmax*PW, Y = v => t + PH - (v-ymin)/(ymax-ymin)*PH;
+  const R = n => 6 + Math.sqrt(n)/Math.sqrt(4770)*20;
+  let s = '';
+  // 「대졸을 부르면서 안정적인 자리」 영역 — 비어 있음을 보이기
+  s += `<rect x="${X(18)}" y="${Y(95)}" width="${X(50)-X(18)}" height="${Y(80)-Y(95)}" fill="var(--c3)" fill-opacity=".07" stroke="var(--c3)" stroke-opacity=".45" stroke-width="1" stroke-dasharray="4 3" rx="6"/>`;
+  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+15}" text-anchor="end" fill="var(--c3)">대졸을 부르면서 안정적인 자리</text>`;
+  s += `<text class="ax" x="${X(50)-6}" y="${Y(95)+29}" text-anchor="end" fill="var(--c3)">— IT뿐이고, 공고는 541건(2.2%)이다</text>`;
+  for (let v=0; v<=50; v+=10){ s += `<line class="gl" x1="${X(v)}" y1="${t}" x2="${X(v)}" y2="${t+PH}"/>`
+    + `<text class="ax" x="${X(v)}" y="${t+PH+16}" text-anchor="middle">${v}%</text>`; }
+  for (let v=40; v<=90; v+=10){ s += `<line class="gl" x1="${l}" y1="${Y(v)}" x2="${l+PW}" y2="${Y(v)}"/>`
+    + `<text class="ax" x="${l-7}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`; }
+  pts.forEach(p=>{
+    s += `<circle class="bar" cx="${X(p.대졸)}" cy="${Y(p.정규직)}" r="${R(p.공고수)}" fill="var(--c1)" fill-opacity=".58" stroke="var(--card)" stroke-width="2" ${tip({업종:p.업종,'공고 수':nf(p.공고수)+'건','대졸 요구':p.대졸+'%','정규직':p.정규직+'%'})}/>`;
+  });
+  // 라벨 — 위에 놓되 이미 놓인 것과 겹치면 아래로 밀어낸다
+  const placed = [];
+  [...pts].sort((a,b)=>b.공고수-a.공고수).forEach(p=>{
+    const cx = X(p.대졸), cy = Y(p.정규직), rad = R(p.공고수), wEst = p.업종.length*6.4;
+    for (const dy of [-rad-7, rad+14, -rad-20, rad+27, -rad-33]){
+      const y = cy + dy;
+      const hit = placed.some(q => Math.abs(q.x-cx) < (q.w+wEst)/2 + 4 && Math.abs(q.y-y) < 13);
+      if (!hit || dy === -rad-33){
+        placed.push({x:cx, y, w:wEst, t:p.업종});
+        s += `<text class="vl on" x="${cx}" y="${y}" text-anchor="middle">${esc(p.업종)}</text>`;
+        break;
+      }
+    }
+  });
+  s += `<text class="ax" x="${l}" y="14">세로 ↑ 정규직 비율 &nbsp;·&nbsp; 원 크기 = 공고 수</text>`;
+  s += `<text class="ax" x="${l+PW}" y="${h-8}" text-anchor="end">가로 → 대졸을 요구하는 비율</text>`;
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 구·군: 두 개의 독립된 막대 트랙 (축 하나씩) ────── */
+function guChart(el, rows){
+  const L = PAD(rows.map(r=>r.구)), GAP = 26;
+  const T1 = Math.round((W-L-GAP)*0.60), T2 = (W-L-GAP) - T1;
+  const H = 24, h = rows.length*H + 40;
+  const m1 = Math.max(...rows.map(r=>r.공고수)), m2 = Math.max(...rows.map(r=>r.대졸));
+  let s = `<text class="ax" x="${L}" y="10">공고 수 (건)</text>`
+        + `<text class="ax" x="${L+T1+GAP}" y="10">대졸 요구 비율 (%)</text>`;
+  rows.forEach((r,i)=>{
+    const y = 18 + i*H, w1 = r.공고수/m1*(T1-46), w2 = r.대졸/m2*(T2-30);
+    s += `<text class="lb" x="${L-9}" y="${y+15}" text-anchor="end">${esc(r.구)}</text>`;
+    s += `<rect class="bar" x="${L}" y="${y+3}" width="${Math.max(2,w1)}" height="15" rx="4" fill="var(--c1)" ${tip({'구·군':r.구,'공고 수':nf(r.공고수)+'건','정규직':r.정규직+'%','대졸 요구':r.대졸+'%','청년 1만명당 대졸신입':r.만명당??'—'})}/>`;
+    s += `<text class="vl" x="${L+w1+6}" y="${y+15}">${nf(r.공고수)}</text>`;
+    s += `<rect class="bar" x="${L+T1+GAP}" y="${y+3}" width="${Math.max(2,w2)}" height="15" rx="4" fill="var(--c2)" ${tip({'구·군':r.구,'대졸 요구':r.대졸+'%','정규직':r.정규직+'%'})}/>`;
+    s += `<text class="vl" x="${L+T1+GAP+w2+6}" y="${y+15}">${r.대졸}</text>`;
+  });
+  s += `<text class="ax" x="${L}" y="${h-6}">두 값은 단위가 달라 축을 따로 두었다 — 막대 길이를 서로 비교하지 말 것</text>`;
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 아령 그래프 ─────────────────────────────────────── */
+function dumbbell(el, rows){
+  const L = PAD(rows.map(r=>r.계열)), BW = W-L-52, H = 27, h = rows.length*H + 52;
+  const lo = 160, hi = 300, X = v => L + (v-lo)/(hi-lo)*BW, base = rows.length*H + 16;
+  let s = '';
+  for (let v=175; v<=300; v+=25) s += `<line class="gl" x1="${X(v)}" y1="4" x2="${X(v)}" y2="${base}"/>`
+    + `<text class="ax" x="${X(v)}" y="${base+16}" text-anchor="middle">${v}</text>`;
+  rows.forEach((r,i)=>{
+    const y = 10 + i*H + 8, a = X(r.잔류소득), b = X(r.이탈소득), on = r.유의;
+    s += `<text class="lb" x="${L-9}" y="${y+4}" text-anchor="end">${esc(r.계열)}</text>`;
+    s += `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" stroke="${on?'var(--c2)':'var(--mute)'}" stroke-width="${on?3:2}" stroke-linecap="round"/>`;
+    s += `<circle class="bar" cx="${a}" cy="${y}" r="5" fill="var(--mute2)" stroke="var(--card)" stroke-width="2" ${tip({계열:r.계열,'부산에 남은 사람':r.잔류소득+'만원','떠난 사람':r.이탈소득+'만원','차이 확인됨':on?'예':'아니오'})}/>`;
+    s += `<circle class="bar" cx="${b}" cy="${y}" r="5" fill="${on?'var(--c2)':'var(--mute2)'}" stroke="var(--card)" stroke-width="2" ${tip({계열:r.계열,'부산에 남은 사람':r.잔류소득+'만원','떠난 사람':r.이탈소득+'만원','차이 확인됨':on?'예':'아니오'})}/>`;
+    s += `<text class="vl ${on?'on':''}" x="${Math.max(a,b)+9}" y="${y+4}">${r.이탈소득>r.잔류소득?'+':''}${(r.이탈소득-r.잔류소득).toFixed(0)}</text>`;
+  });
+  s += `<text class="ax" x="${L}" y="${base+16}" text-anchor="end">월소득(만원) </text>`;
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 주거비 누적 ─────────────────────────────────────── */
+function housing(el, rows){
+  const L = PAD(rows.map(r=>r.구분)), BW = W-L-72, H = 46, h = rows.length*H + 30;
+  const max = Math.max(...rows.map(r=>r.소득));
+  let s = `<text class="ax" x="${L}" y="10">월소득을 「주거비」와 「그 외」로 나눈 것 (만원)</text>`;
+  rows.forEach((r,i)=>{
+    const y = 22 + i*H, w1 = r.실질/max*BW, w2 = r.주거비/max*BW;
+    s += `<text class="lb" x="${L-9}" y="${y+18}" text-anchor="end">${esc(r.구분)}</text>`;
+    s += `<rect class="bar" x="${L}" y="${y+2}" width="${w1}" height="24" rx="4" fill="var(--c1)" ${tip({구분:r.구분,'주거비 빼고 남는 돈':r.실질+'만원','월 주거비':r.주거비+'만원','월소득':r.소득+'만원',표본:r.n+'명'})}/>`;
+    s += `<rect class="bar" x="${L+w1+2}" y="${y+2}" width="${Math.max(2,w2-2)}" height="24" rx="4" fill="var(--c2)" ${tip({구분:r.구분,'월 주거비':r.주거비+'만원','소득 대비':(r.주거비/r.소득*100).toFixed(1)+'%',표본:r.n+'명'})}/>`;
+    s += `<text class="vl on" x="${L+8}" y="${y+19}" fill="#fff">${r.실질}</text>`;
+    s += `<text class="vl on" x="${L+w1+w2+8}" y="${y+19}">주거비 ${r.주거비}</text>`;
+    s += `<text class="ax" x="${L}" y="${y+38}">월소득 ${r.소득}만원 · ${r.n}명</text>`;
+  });
+  el.innerHTML = svg(h, s);
+}
+
+/* ── 표 ─────────────────────────────────────────────── */
+function table(el, cols, rows){
+  el.innerHTML = `<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map(r=>`<tr>${r.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('') + `</tbody></table>`;
+}
+
+/* ── 렌더 ───────────────────────────────────────────── */
+hbar($('c-grad'), D.grad.map(r=>({k:r.계열, v:r.졸업자, tip:{계열:r.계열, 졸업생:nf(r.졸업자)+'명', 비중:(r.졸업자/36356*100).toFixed(1)+'%'}})), {labelTop:6});
+table($('t-grad'), ['계열','졸업생 수','비중'], D.grad.map(r=>[r.계열, nf(r.졸업자), (r.졸업자/36356*100).toFixed(1)+'%']));
+
+stack1($('c-edu'), [
+  {k:'학력 안 봄', v:D.edu_total['학력 안 봄'], color:'var(--mute)'},
+  {k:'전문대 졸업', v:D.edu_total['전문대 졸업'], color:'var(--mute2)'},
+  {k:'고졸 이하', v:D.edu_total['고졸 이하'], color:'var(--mute2)'},
+  {k:'4년제 이상', v:D.edu_total['4년제 이상'], color:'var(--c1)'},
+  {k:'적지 않음', v:D.edu_total['적지 않음'], color:'var(--mute)'}]);
+funnel($('c-funnel'), D.funnel);
+
+const occ = D.edu_occ.filter(r=>r.직업!=='미분류').map(r=>({k:r.직업.replace(/·경찰·소방·군인|·돌봄·청소/g,'…'), n:r.공고수,
+  대졸이상:r.대졸이상, 전문대졸:r.전문대졸, 고졸이하:r.고졸이하, 학력무관:r.학력무관+r.미기재}));
+stackRows($('c-occ'), occ);
+table($('t-occ'), ['직업','공고 수','4년제 이상','전문대','고졸 이하','학력 안 봄·미기재'],
+  D.edu_occ.map(r=>[r.직업, nf(r.공고수), r.대졸이상+'%', r.전문대졸+'%', r.고졸이하+'%', (r.학력무관+r.미기재).toFixed(1)+'%']));
+
+const mm = D.mismatch.map(r=>({k:r.직업.replace(/·경찰·소방|·돌봄·청소/g,'…'), ...r})).sort((a,b)=>b.차이-a.차이);
+diverge($('c-mm'), mm);
+table($('t-mm'), ['직업','졸업생 비율','공고 비율','차이(%p)'], mm.map(r=>[r.직업, r.졸업생+'%', r.공고+'%', (r.차이>0?'+':'')+r.차이]));
+
+scatter($('c-ind'), D.industry);
+table($('t-ind'), ['업종','공고 수','대졸 요구','정규직'], D.industry.map(r=>[r.업종, nf(r.공고수), r.대졸+'%', r.정규직+'%']));
+
+const gu = D.gu.filter(r=>r.구!=='미상');
+guChart($('c-gu'), gu);
+table($('t-gu'), ['구·군','공고 수','정규직','대졸 요구','청년 1만명당 대졸신입'],
+  gu.map(r=>[r.구, nf(r.공고수), r.정규직+'%', r.대졸+'%', r.만명당!=null?r.만명당.toFixed(1):'—']));
+
+hbar($('c-exit'), D.exit.map(r=>({k:r.계열, v:r.이탈, color:'var(--c2)',
+  tip:{계열:r.계열,'부산을 떠난 비율':r.이탈+'%','졸업생':nf(r.졸업자)+'명'}})),
+  {fmt:v=>v.toFixed(1)+'%', labelTop:3});
+table($('t-exit'), ['계열','떠난 비율','남은 사람 소득','떠난 사람 소득','차이 확인'],
+  D.exit.map(r=>[r.계열, r.이탈+'%', r.잔류소득+'만원', r.이탈소득+'만원', r.유의?'확인됨':'—']));
+
+dumbbell($('c-dumb'), D.exit);
+housing($('c-hou'), D.housing);
+
+const base = D.housing[0], cap = D.housing[1];
+const nom = +(cap.소득 - base.소득).toFixed(1);
+const off = +(cap.주거비 - base.주거비).toFixed(1);
+const net = +(nom - off).toFixed(1);
+hbar($('c-offset'), [
+  {k:'월소득 차이', v:nom, color:'var(--c1)',
+   tip:{'월소득 차이':'+'+nom+'만원','부산에 남은 사람':base.소득+'만원','수도권으로 간 사람':cap.소득+'만원'}},
+  {k:'주거비가 상쇄하는 몫', v:off, color:'var(--c2)',
+   tip:{'주거비 차이':'+'+off+'만원','부산':base.주거비+'만원','수도권':cap.주거비+'만원','격차 대비':(off/nom*100).toFixed(0)+'%'}},
+  {k:'그래도 남는 차이', v:net, color:'var(--c1)',
+   tip:{'주거비를 뺀 차이':'+'+net+'만원','원래 격차 대비':(net/nom*100).toFixed(0)+'% 유지'}}
+], {fmt:v=>'+'+v.toFixed(1)+'만원', labelTop:99, suffix:true});
+$('c-offset').insertAdjacentHTML('beforeend',
+  `<div style="font-size:12.5px;color:var(--ink2);margin-top:2px">`+
+  `주거비로 상쇄되는 몫은 <b style="color:var(--c2)">${(off/nom*100).toFixed(0)}%</b>뿐이고, `+
+  `<b style="color:var(--ink)">${(net/nom*100).toFixed(0)}%</b>가 그대로 남는다. `+
+  `보증금 월세만 보면 상쇄되는 몫이 1%(0.5만원)로 더 작아진다.</div>`);
+
+/* ── 표 토글 ─────────────────────────────────────────── */
+document.querySelectorAll('.tog').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const t = $(b.dataset.t), c = $('c-'+b.dataset.t.slice(2));
+    const show = t.hidden;
+    t.hidden = !show; if (c) c.hidden = show;
+    b.textContent = show ? '그래프로 보기' : '표로 보기';
+  });
+});
+
+/* ── 툴팁 ───────────────────────────────────────────── */
+const T = $('tip');
+document.addEventListener('mouseover', e=>{
+  const el = e.target.closest('[data-tip]'); if (!el) return;
+  const o = JSON.parse(el.dataset.tip);
+  const ks = Object.keys(o);
+  T.innerHTML = `<b>${esc(o[ks[0]])}</b>` + ks.slice(1).map(k=>
+    `<div class="r"><span>${esc(k)}</span><span>${esc(o[k])}</span></div>`).join('');
+  T.style.opacity = 1;
+});
+document.addEventListener('mouseout', e=>{ if (e.target.closest('[data-tip]')) T.style.opacity = 0; });
+document.addEventListener('mousemove', e=>{
+  if (T.style.opacity === '0' || !T.style.opacity) return;
+  const p = 14, w = T.offsetWidth, h = T.offsetHeight;
+  T.style.left = Math.min(e.clientX + p, innerWidth - w - 8) + 'px';
+  T.style.top = (e.clientY - h - p < 8 ? e.clientY + p : e.clientY - h - p) + 'px';
+});
+</script>
+
+</body>
+</html>
